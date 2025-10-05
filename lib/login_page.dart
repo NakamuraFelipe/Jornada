@@ -16,15 +16,27 @@ class _LoginPageState extends State<LoginPage> {
       child: Column(
         children: [
           Padding(padding: EdgeInsets.only(top: 70)),
-          Center(child: Image.asset('assets/images/logo.png')),
-          Padding(padding: EdgeInsets.only(top: 10)),
-          Center(child: Image.asset('assets/images/logo2.png')),
+          Center(child: Image.asset('assets/images/logo3.png', width: 200)),
 
-          Padding(padding: EdgeInsets.only(top: 40)),
+          Padding(padding: EdgeInsets.only(top: 70)),
+          //Center(child: Image.asset('assets/images/logo2.png')),
+          Text(
+            "LOGIN",
+            style: TextStyle(
+              fontSize: 60,
+              color: Colors.white,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Padding(padding: EdgeInsets.only(top: 50)),
           SizedBox(
             width: 320,
             child: TextField(
-              style: TextStyle(fontSize: 20, color: Colors.white),
+              style: TextStyle(
+                fontSize: 20,
+                color: const Color.fromARGB(255, 0, 0, 0),
+              ),
               decoration: InputDecoration(
                 contentPadding: EdgeInsets.symmetric(
                   vertical: 8,
@@ -40,7 +52,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
 
                 labelText: 'Email',
-                labelStyle: TextStyle(color: Colors.white, fontSize: 20),
+                labelStyle: TextStyle(fontSize: 20),
                 border: OutlineInputBorder(),
               ),
             ),
@@ -49,7 +61,7 @@ class _LoginPageState extends State<LoginPage> {
           SizedBox(
             width: 320,
             child: TextField(
-              style: TextStyle(fontSize: 20, color: Colors.white),
+              style: TextStyle(fontSize: 20),
               decoration: InputDecoration(
                 contentPadding: EdgeInsets.symmetric(
                   vertical: 8,
@@ -61,12 +73,15 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: Colors.white, width: 2),
+                  borderSide: BorderSide(
+                    color: const Color.fromARGB(255, 0, 0, 0),
+                    width: 2,
+                  ),
                 ),
 
                 labelText: 'Password',
-                labelStyle: TextStyle(color: Colors.white, fontSize: 20),
                 border: OutlineInputBorder(),
+                labelStyle: TextStyle(fontSize: 20),
               ),
             ),
           ),
@@ -100,11 +115,30 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  Widget background3() {
+    return Padding(
+      padding: EdgeInsets.only(top: 240),
+      child: Container(
+        height: 600,
+        width: 800,
+        decoration: BoxDecoration(
+          color: Colors.white,
+
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(50),
+            topRight: Radius.circular(50),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFFFF0000),
       resizeToAvoidBottomInset: false,
-      body: Stack(children: [background(), _body()]),
+      body: Stack(children: [background3(), _body()]),
     );
   }
 }
