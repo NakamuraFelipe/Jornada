@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
-// ignore: unused_import
-import 'package:teste/app_controler.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage_Gestor extends StatefulWidget {
   @override
-  State<HomePage> createState() {
-    return HomePageState();
-  }
+  State<HomePage_Gestor> createState() => HomePageGestorState();
 }
 
-class HomePageState extends State<HomePage> {
-  int counter = 0;
-
+class HomePageGestorState extends State<HomePage_Gestor> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -42,12 +36,31 @@ class HomePageState extends State<HomePage> {
             ),
           ),
           SizedBox(height: 30),
-          // Conteúdo central (botões)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Column(
               children: [
-                // Linha 1: Buscar Leads e Criar Leads
+                // Linha 1: Gerenciar PAP
+                ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    elevation: 5,
+                    padding: EdgeInsets.symmetric(vertical: 25),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Gerenciar PAP',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20),
+                // Linha 2: Buscar Leads e Criar Leads
                 Row(
                   children: [
                     Expanded(
@@ -57,14 +70,14 @@ class HomePageState extends State<HomePage> {
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.black,
                           elevation: 5,
-                          padding: EdgeInsets.symmetric(vertical: 25), // aumento da altura
+                          padding: EdgeInsets.symmetric(vertical: 20),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
                           ),
                         ),
                         child: Text(
                           'Buscar Leads',
-                          style: TextStyle(fontSize: 18),
+                          style: TextStyle(fontSize: 16),
                         ),
                       ),
                     ),
@@ -76,64 +89,67 @@ class HomePageState extends State<HomePage> {
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.black,
                           elevation: 5,
-                          padding: EdgeInsets.symmetric(vertical: 25), // aumento da altura
+                          padding: EdgeInsets.symmetric(vertical: 20),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
                           ),
                         ),
                         child: Text(
                           'Criar Leads',
-                          style: TextStyle(fontSize: 18),
+                          style: TextStyle(fontSize: 16),
                         ),
                       ),
                     ),
                   ],
                 ),
                 SizedBox(height: 20),
-                // Linha 2: Meus Leads
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    elevation: 5,
-                    padding: EdgeInsets.symmetric(vertical: 25), // maior altura
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
+                // Linha 3: Meus Leads e Leads Salvos
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          elevation: 5,
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        child: Text(
+                          'Meus Leads',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Meus Leads',
-                      style: TextStyle(fontSize: 18),
+                    SizedBox(width: 20),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          elevation: 5,
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        child: Text(
+                          'Leads Salvos',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                SizedBox(height: 20),
-                // Linha 3: Leads Salvos
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    elevation: 5,
-                    padding: EdgeInsets.symmetric(vertical: 25), // maior altura
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Leads Salvos',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ),
+                  ],
                 ),
               ],
             ),
           ),
-          Spacer(), // empurra o rodapé para baixo
-          // Rodapé fixo
+          Spacer(),
+          // Rodapé fixo com botão Home
           Container(
             width: double.infinity,
             padding: EdgeInsets.symmetric(vertical: 20),
@@ -143,7 +159,7 @@ class HomePageState extends State<HomePage> {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => HomePage()),
+                    MaterialPageRoute(builder: (context) => HomePage_Gestor()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -165,5 +181,3 @@ class HomePageState extends State<HomePage> {
     );
   }
 }
-
-
