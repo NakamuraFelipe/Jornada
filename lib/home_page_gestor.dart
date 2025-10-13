@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'gerenciar_pap.dart'; 
 
 class HomePage_Gestor extends StatefulWidget {
   @override
@@ -21,7 +22,8 @@ class HomePageGestorState extends State<HomePage_Gestor> {
               children: [
                 CircleAvatar(
                   radius: 40,
-                  backgroundImage: AssetImage('assets/images/foto_perfil_teste.png'),
+                  backgroundImage:
+                      AssetImage('assets/images/foto_perfil_teste.png'),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -42,7 +44,13 @@ class HomePageGestorState extends State<HomePage_Gestor> {
               children: [
                 // Linha 1: Gerenciar PAP
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    // 👇 leva para a tela Gerenciar PAP
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => GerenciarPAP()),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
@@ -159,7 +167,8 @@ class HomePageGestorState extends State<HomePage_Gestor> {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => HomePage_Gestor()),
+                    MaterialPageRoute(
+                        builder: (context) => HomePage_Gestor()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
