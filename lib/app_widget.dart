@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 // ignore: unused_import
 import 'package:teste/Login_page.dart';
 import 'package:teste/app_controler.dart';
+import 'package:teste/gerenciar_pap.dart';
 // ignore: undefined_hidden_name
 import 'package:teste/home_page.dart' hide AppControler;
 import 'package:teste/home_page_gestor.dart';
@@ -27,7 +28,7 @@ class appWidget extends StatelessWidget {
           ),
           initialRoute: '/',
           routes: {
-            '/': (context) => HomePage_Gestor(),
+            '/': (context) => GerenciarPAP(),
             '/home': (context) => HomePage(),
           },
         );
