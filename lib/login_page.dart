@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// ignore: unused_import
 import 'package:teste/home_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -12,6 +11,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   String email = '';
   String password = '';
+  bool passwordText = true;
 
   Widget _body() {
     return SingleChildScrollView(
@@ -67,6 +67,7 @@ class _LoginPageState extends State<LoginPage> {
           SizedBox(
             width: 320,
             child: TextField(
+              obscureText: passwordText,
               onChanged: (text) {
                 password = text;
               },
@@ -76,6 +77,7 @@ class _LoginPageState extends State<LoginPage> {
                   vertical: 8,
                   horizontal: 15,
                 ),
+
                 prefixIcon: const Icon(Icons.password),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -84,6 +86,16 @@ class _LoginPageState extends State<LoginPage> {
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
                   borderSide: BorderSide(color: Colors.black, width: 2),
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    passwordText ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      passwordText = !passwordText;
+                    });
+                  },
                 ),
 
                 labelText: 'Password',
@@ -166,12 +178,7 @@ class _LoginPageState extends State<LoginPage> {
       body: SingleChildScrollView(
         child: SizedBox(
           height: MediaQuery.of(context).size.height,
-          child: Stack(
-            children: [
-              background3(context), // seu fundo
-              _body(), // seu conteúdo
-            ],
-          ),
+          child: Stack(children: [background3(context), _body()]),
         ),
       ),
     );
