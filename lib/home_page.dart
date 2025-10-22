@@ -10,14 +10,12 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  int counter = 0;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
         children: [
-          Container(height: 10, color: Color(0xFFFF0000)),
+          Container(height: 10, color: Color(0xFFD32F2F)),
           Container(
             width: double.infinity,
             padding: EdgeInsetsDirectional.only(
@@ -26,7 +24,7 @@ class HomePageState extends State<HomePage> {
               end: 15,
               bottom: 10,
             ),
-            color: Color(0xFFFF0000),
+            color: Color(0xFFD32F2F),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -73,7 +71,7 @@ class HomePageState extends State<HomePage> {
                 // Logo à direita
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [Image.asset('assets/images/logo.png', height: 50)],
+                  children: [Image.asset('assets/images/logo.png', height: 30)],
                 ),
               ],
             ),
@@ -88,7 +86,7 @@ class HomePageState extends State<HomePage> {
                   width: 350,
                   height: 160,
                   decoration: BoxDecoration(
-                    color: Color(0xFFFF0000).withOpacity(0.8),
+                    color: Color(0xFFD32F2F).withOpacity(0.8),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Stack(
@@ -181,7 +179,9 @@ class HomePageState extends State<HomePage> {
                     SizedBox(width: 20),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.of(context).pushNamed('/leads');
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.black,
@@ -204,7 +204,9 @@ class HomePageState extends State<HomePage> {
                 SizedBox(height: 20),
                 // Linha 2: Meus Leads
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.of(context).pushNamed('/meus_leads');
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
@@ -243,15 +245,10 @@ class HomePageState extends State<HomePage> {
           Container(
             width: double.infinity,
             padding: EdgeInsets.symmetric(vertical: 4),
-            color: Color(0xFFFF0000),
+            color: Color(0xFFD32F2F),
             child: Center(
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => HomePage()),
-                  );
-                },
+                onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   shape: CircleBorder(),
                   padding: EdgeInsets.all(15),
