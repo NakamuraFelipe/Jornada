@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 // ignore: unused_import
 import 'package:teste/Login_page.dart';
 import 'package:teste/app_controler.dart';
+import 'package:teste/criar_leads.dart';
 import 'package:teste/gerenciar_pap.dart';
 // ignore: undefined_hidden_name
 import 'package:teste/home_page.dart' hide AppControler;
 import 'package:teste/home_page_gestor.dart';
+import 'package:teste/inicio.dart';
+import 'package:teste/meus_leads.dart';
 
 class appWidget extends StatelessWidget {
   final String title;
@@ -32,6 +35,9 @@ class appWidget extends StatelessWidget {
             '/login': (context) => LoginPage(),
             '/pap': (context) => GerenciarPAP(),
             '/home': (context) => HomePage(),
+            '/inicio': (context) => Inicio(),
+            '/leads': (context) => CreateLead(),
+            '/meus_leads': (context) => MeusLeads(),
           },
         );
       },
