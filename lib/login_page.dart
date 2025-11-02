@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:teste/home_page.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import './models/usuario_logado.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,180 +15,182 @@ class _LoginPageState extends State<LoginPage> {
   String email = '';
   String password = '';
   bool passwordText = true;
+  bool loading = false;
 
-  Widget _body() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Padding(padding: EdgeInsets.only(top: 80)),
-          Center(child: Image.asset('assets/images/logo3.png', width: 160)),
+  // 🔹 Função de login que retorna o usuário logado e salva token localmente
+  Future<UsuarioLogado?> loginUser(String email, String password) async {
+    final url = Uri.parse("http://192.168.0.22:5000/login"); // IP do Flask
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
 
-          Padding(padding: EdgeInsets.only(top: 65)),
-          //Center(child: Image.asset('assets/images/logo2.png')),
-          Text(
-            "LOGIN",
-            style: TextStyle(
-              fontSize: 55,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFD32F2F),
-              letterSpacing: 2,
-            ),
-          ),
-          Padding(padding: EdgeInsets.only(top: 40)),
-          SizedBox(
-            width: 300,
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'ok') {
+          // Salva token localmente
+          final token = data['token'];
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('token', token);
 
-            child: TextField(
-              onChanged: (text) {
-                email = text;
-              },
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 20,
-                decoration: TextDecoration.none,
-              ),
-              decoration: InputDecoration(
-                contentPadding: EdgeInsets.symmetric(
-                  vertical: 15,
-                  horizontal: 15,
-                ),
-                prefixIcon: const Icon(Icons.email, color: Color(0xFFD32F2F)),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide(color: Colors.black),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide(color: Color(0xFFD32F2F)),
-                ),
-
-                labelText: 'Email',
-                labelStyle: TextStyle(color: Colors.grey[700], fontSize: 16),
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-          Padding(padding: EdgeInsets.only(top: 40)),
-          SizedBox(
-            width: 300,
-            child: TextField(
-              obscureText: passwordText,
-              onChanged: (text) {
-                password = text;
-              },
-              style: TextStyle(fontSize: 20),
-              decoration: InputDecoration(
-                contentPadding: EdgeInsets.symmetric(
-                  vertical: 15,
-                  horizontal: 15,
-                ),
-                prefixIcon: const Icon(Icons.lock, color: Color(0xFFD32F2F)),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide(color: Colors.black),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide(color: Color(0xFFD32F2F)),
-                ),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    passwordText ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      passwordText = !passwordText;
-                    });
-                  },
-                ),
-
-                labelText: 'Password',
-                border: OutlineInputBorder(),
-                labelStyle: TextStyle(color: Colors.grey[700], fontSize: 16),
-              ),
-            ),
-          ),
-          Padding(padding: EdgeInsets.only(top: 40)),
-          ElevatedButton(
-            onPressed: () {
-              if (email == 'xamuel@gmail.com' && password == '1234') {
-                Navigator.of(context).pushReplacementNamed('/home');
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFFD32F2F),
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 80, vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text('Login'),
-          ),
-          Padding(padding: EdgeInsets.only(top: 40)),
-          Text("Esqueceu sua senha?"),
-        ],
-      ),
-    );
-  }
-
-  Widget background() {
-    return Container(
-      height: 1000,
-      width: 500,
-      decoration: BoxDecoration(
-        color: Color(0xFF7A1315),
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(500)),
-        //image: DecorationImage(
-        //image: AssetImage('assets/images/retangulo.png'),
-        //fit: BoxFit.cover,
-        //),
-      ),
-    );
-  }
-
-  Widget background2() {
-    return Container(
-      height: MediaQuery.of(context).size.height,
-      width: MediaQuery.of(context).size.width,
-      child: Image.asset('assets/images/retangulo.png', fit: BoxFit.cover),
-    );
-  }
-
-  Widget background3(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Container(
-          width: double.infinity,
-          constraints: BoxConstraints(minHeight: constraints.maxHeight),
-          margin: EdgeInsets.only(top: 230),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(35),
-              topRight: Radius.circular(35),
-            ),
-          ),
-        );
-      },
-    );
+          // Retorna o usuário com token incluído
+          final usuarioJson = data['usuario'];
+          usuarioJson['token'] = token; // ⚠️ adiciona token ao objeto
+          return UsuarioLogado.fromJson(usuarioJson);
+        }
+      } else {
+        print('Erro no login: ${response.body}');
+      }
+      return null;
+    } catch (e) {
+      print('Erro de conexão: $e');
+      return null;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-      },
+      onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: Color(0xFFD32F2F),
-        resizeToAvoidBottomInset: true,
+        backgroundColor: const Color(0xFFD32F2F),
         body: SingleChildScrollView(
           child: SizedBox(
             height: MediaQuery.of(context).size.height,
-            child: Stack(children: [background3(context), _body()]),
+            child: Stack(
+              children: [
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(top: 230),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(35),
+                      topRight: Radius.circular(35),
+                    ),
+                  ),
+                ),
+                _body(),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _body() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 80),
+          Center(child: Image.asset('assets/images/logo3.png', width: 160)),
+          const SizedBox(height: 65),
+          const Padding(
+            padding: EdgeInsets.only(left: 30),
+            child: Text(
+              "LOGIN",
+              style: TextStyle(
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFD32F2F),
+                letterSpacing: 2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          _emailField(),
+          const SizedBox(height: 20),
+          _passwordField(),
+          const SizedBox(height: 40),
+          _loginButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _emailField() {
+    return Center(
+      child: SizedBox(
+        width: 300,
+        child: TextField(
+          onChanged: (text) => email = text.trim(),
+          keyboardType: TextInputType.emailAddress,
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.email, color: Color(0xFFD32F2F)),
+            labelText: 'Email',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _passwordField() {
+    return Center(
+      child: SizedBox(
+        width: 300,
+        child: TextField(
+          obscureText: passwordText,
+          onChanged: (text) => password = text,
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.lock, color: Color(0xFFD32F2F)),
+            labelText: 'Senha',
+            suffixIcon: IconButton(
+              icon: Icon(passwordText ? Icons.visibility : Icons.visibility_off),
+              onPressed: () => setState(() => passwordText = !passwordText),
+            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _loginButton() {
+    return Center(
+      child: ElevatedButton(
+        onPressed: loading
+            ? null
+            : () async {
+                if (email.isEmpty || password.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Preencha email e senha')),
+                  );
+                  return;
+                }
+
+                setState(() => loading = true);
+                final usuario = await loginUser(email, password);
+                setState(() => loading = false);
+
+                if (usuario != null) {
+                  print('Login OK: ${usuario.nomeUsuario}');
+                  Navigator.pushReplacementNamed(
+                    context,
+                    '/inicio',
+                    arguments: usuario,
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Email ou senha incorretos')),
+                  );
+                }
+              },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFD32F2F),
+          padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        ),
+        child: loading
+            ? const CircularProgressIndicator(color: Colors.white)
+            : const Text(
+                'Login',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
       ),
     );
   }

@@ -1,5 +1,181 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart'; // para formatar valores monetários
 
+// ===== MODELOS =====
+class Address {
+  final String pais;
+  final String estado;
+  final String cidade;
+  final String rua;
+  final String numero;
+  final String? complemento;
+
+  Address({
+    required this.pais,
+    required this.estado,
+    required this.cidade,
+    required this.rua,
+    required this.numero,
+    this.complemento,
+  });
+
+  String resumo() {
+    final comp = (complemento == null || complemento!.trim().isEmpty)
+        ? ''
+        : ' - ${complemento!.trim()}';
+    return '$rua, $numero$comp - $cidade/$estado - $pais';
+  }
+
+  @override
+  String toString() => resumo();
+}
+
+class Lead {
+  final String nome;
+  final String telefone;
+  final Address endereco;
+  final String? categoria;
+  final String? observacao;
+
+  Lead({
+    required this.nome,
+    required this.telefone,
+    required this.endereco,
+    this.categoria,
+    this.observacao,
+  });
+
+  @override
+  String toString() =>
+      'Lead(nome: $nome, telefone: $telefone, endereco: ${endereco.resumo()}, categoria: $categoria, observacao: $observacao)';
+}
+
+// ===== DIALOG DE ENDEREÇO =====
+class AddressDialog extends StatefulWidget {
+  const AddressDialog({super.key});
+
+  @override
+  State<AddressDialog> createState() => _AddressDialogState();
+}
+
+class _AddressDialogState extends State<AddressDialog> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _paisCtrl = TextEditingController();
+  final _estadoCtrl = TextEditingController();
+  final _cidadeCtrl = TextEditingController();
+  final _ruaCtrl = TextEditingController();
+  final _numeroCtrl = TextEditingController();
+  final _complementoCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _paisCtrl.dispose();
+    _estadoCtrl.dispose();
+    _cidadeCtrl.dispose();
+    _ruaCtrl.dispose();
+    _numeroCtrl.dispose();
+    _complementoCtrl.dispose();
+    super.dispose();
+  }
+
+  void _confirmar() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final address = Address(
+      pais: _paisCtrl.text.trim(),
+      estado: _estadoCtrl.text.trim(),
+      cidade: _cidadeCtrl.text.trim(),
+      rua: _ruaCtrl.text.trim(),
+      numero: _numeroCtrl.text.trim(),
+      complemento:
+          _complementoCtrl.text.trim().isEmpty ? null : _complementoCtrl.text.trim(),
+    );
+
+    Navigator.of(context).pop(address);
+  }
+
+  InputDecoration _dec(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, color: kPrimary),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.black),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: kPrimary, width: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Selecionar Endereço'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _paisCtrl,
+                decoration: _dec('País *', Icons.public),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe o país' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _estadoCtrl,
+                decoration: _dec('Estado *', Icons.flag),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe o estado' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _cidadeCtrl,
+                decoration: _dec('Cidade *', Icons.location_city),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe a cidade' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _ruaCtrl,
+                decoration: _dec('Rua *', Icons.map),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe a rua' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _numeroCtrl,
+                keyboardType: TextInputType.number,
+                decoration: _dec('Número *', Icons.numbers),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe o número' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _complementoCtrl,
+                decoration: _dec('Complemento (opcional)', Icons.add_location_alt),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar')),
+        ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kPrimary,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: _confirmar,
+            child: const Text('Confirmar')),
+      ],
+    );
+  }
+}
+
+// ===== CREATE LEAD =====
 const kPrimary = Color(0xFFD32F2F);
 
 class CreateLead extends StatefulWidget {
@@ -11,17 +187,22 @@ class CreateLead extends StatefulWidget {
 
 class _CreateLeadState extends State<CreateLead> {
   final _formKey = GlobalKey<FormState>();
-
-  // Controllers
   final _nomeCtrl = TextEditingController();
+  final _telefoneCtrl = TextEditingController();
+  final _valorCtrl = TextEditingController();
   final _obsCtrl = TextEditingController();
 
-  String? _categoria; // opcional
-  Address? _endereco; // obrigatório
+  String? _categoria;
+  Address? _endereco;
+
+  // ignore: unused_field
+  final _formatter = NumberFormat("#,##0.00", "pt_BR");
 
   @override
   void dispose() {
     _nomeCtrl.dispose();
+    _telefoneCtrl.dispose();
+    _valorCtrl.dispose();
     _obsCtrl.dispose();
     super.dispose();
   }
@@ -32,15 +213,11 @@ class _CreateLeadState extends State<CreateLead> {
       barrierDismissible: false,
       builder: (ctx) => const AddressDialog(),
     );
-    if (selecionado != null) {
-      setState(() => _endereco = selecionado);
-    }
+    if (selecionado != null) setState(() => _endereco = selecionado);
   }
 
   void _salvar() {
     final isValid = _formKey.currentState?.validate() ?? false;
-
-    // Validar endereço (obrigatório)
     if (_endereco == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -54,14 +231,11 @@ class _CreateLeadState extends State<CreateLead> {
     if (isValid) {
       final lead = Lead(
         nome: _nomeCtrl.text.trim(),
+        telefone: _telefoneCtrl.text.trim(),
         endereco: _endereco!,
         categoria: _categoria,
         observacao: _obsCtrl.text.trim().isEmpty ? null : _obsCtrl.text.trim(),
       );
-
-      // Aqui você pode enviar o lead para sua API/serviço, persistir local, etc.
-      // Exemplo: printar no console
-      // ignore: avoid_print
       print(lead);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -70,10 +244,7 @@ class _CreateLeadState extends State<CreateLead> {
           backgroundColor: kPrimary,
         ),
       );
-
-      Navigator.of(
-        context,
-      ).pop(lead); // retorna o lead para a página anterior (opcional)
+      Navigator.of(context).pop(lead);
     }
   }
 
@@ -101,7 +272,7 @@ class _CreateLeadState extends State<CreateLead> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Nome do lead (obrigatório)
+                // Nome
                 TextFormField(
                   controller: _nomeCtrl,
                   textInputAction: TextInputAction.next,
@@ -114,18 +285,60 @@ class _CreateLeadState extends State<CreateLead> {
                     ),
                   ),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
-                      return 'Informe o nome do lead';
-                    }
-                    if (v.trim().length < 2) {
-                      return 'Nome muito curto';
-                    }
+                    if (v == null || v.trim().isEmpty) return 'Informe o nome do lead';
+                    if (v.trim().length < 2) return 'Nome muito curto';
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
 
-                // Endereço (obrigatório via dialog)
+                // Telefone
+                TextFormField(
+                  controller: _telefoneCtrl,
+                  textInputAction: TextInputAction.next,
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    TelefoneInputFormatter(),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: 'Telefone *',
+                    prefixIcon: const Icon(Icons.phone, color: kPrimary),
+                    hintText: '(43) 99999-9999',
+                    enabledBorder: themeInputBorder,
+                    focusedBorder: themeInputBorder.copyWith(
+                      borderSide: const BorderSide(color: kPrimary, width: 2),
+                    ),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Informe o telefone';
+                    if (v.replaceAll(RegExp(r'\D'), '').length < 10) return 'Telefone incompleto';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Valor da proposta
+                TextFormField(
+                  controller: _valorCtrl,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                    ValorInputFormatter(),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: 'Valor da proposta',
+                    prefixIcon: const Icon(Icons.attach_money, color: kPrimary),
+                    hintText: '0,00',
+                    enabledBorder: themeInputBorder,
+                    focusedBorder: themeInputBorder.copyWith(
+                      borderSide: const BorderSide(color: kPrimary, width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Endereço
                 Card(
                   elevation: 0,
                   color: const Color(0xFFF7F7F7),
@@ -148,14 +361,9 @@ class _CreateLeadState extends State<CreateLead> {
                             const Spacer(),
                             TextButton.icon(
                               onPressed: _abrirDialogEndereco,
-                              icon: const Icon(
-                                Icons.edit_location_alt,
-                                color: kPrimary,
-                              ),
+                              icon: const Icon(Icons.edit_location_alt, color: kPrimary),
                               label: Text(
-                                _endereco == null
-                                    ? 'Escolher endereço'
-                                    : 'Alterar',
+                                _endereco == null ? 'Escolher endereço' : 'Alterar',
                                 style: const TextStyle(
                                   color: kPrimary,
                                   fontWeight: FontWeight.bold,
@@ -181,7 +389,7 @@ class _CreateLeadState extends State<CreateLead> {
                 ),
                 const SizedBox(height: 16),
 
-                // Categoria de venda (opcional)
+                // Categoria
                 DropdownButtonFormField<String>(
                   value: _categoria,
                   isExpanded: true,
@@ -194,19 +402,16 @@ class _CreateLeadState extends State<CreateLead> {
                     ),
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'Varejo', child: Text('Varejo')),
-                    DropdownMenuItem(value: 'Atacado', child: Text('Atacado')),
-                    DropdownMenuItem(
-                      value: 'Serviços',
-                      child: Text('Serviços'),
-                    ),
-                    DropdownMenuItem(value: 'Outros', child: Text('Outros')),
+                    DropdownMenuItem(value: 'Imovel', child: Text('Imóvel')),
+                    DropdownMenuItem(value: 'Veículo', child: Text('Veículo')),
+                    DropdownMenuItem(value: 'Serviços', child: Text('Serviços')),
+                    DropdownMenuItem(value: 'Bens Móveis', child: Text('Bens Móveis')),
                   ],
                   onChanged: (val) => setState(() => _categoria = val),
                 ),
                 const SizedBox(height: 16),
 
-                // Observação (opcional)
+                // Observação
                 TextFormField(
                   controller: _obsCtrl,
                   maxLines: 4,
@@ -222,7 +427,7 @@ class _CreateLeadState extends State<CreateLead> {
                 ),
                 const SizedBox(height: 24),
 
-                // Ações
+                // Botões
                 Row(
                   children: [
                     Expanded(
@@ -269,196 +474,53 @@ class _CreateLeadState extends State<CreateLead> {
   }
 }
 
-// ======= MODELOS =======
+// ======== FORMATADORES ========
 
-class Lead {
-  final String nome;
-  final Address endereco;
-  final String? categoria;
-  final String? observacao;
-
-  Lead({
-    required this.nome,
-    required this.endereco,
-    this.categoria,
-    this.observacao,
-  });
-
+class TelefoneInputFormatter extends TextInputFormatter {
   @override
-  String toString() {
-    return 'Lead(nome: $nome, endereco: ${endereco.resumo()}, categoria: $categoria, observacao: $observacao)';
-  }
-}
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    var text = newValue.text.replaceAll(RegExp(r'\D'), '');
+    if (text.length > 11) text = text.substring(0, 11);
 
-class Address {
-  final String pais;
-  final String estado;
-  final String cidade;
-  final String rua;
-  final String numero;
-  final String? complemento;
+    String formatted = '';
+    if (text.isNotEmpty) {
+      formatted = '(';
+      if (text.length >= 2) {
+        formatted += text.substring(0, 2) + ') ';
+        if (text.length >= 7) {
+          formatted += text.substring(2, text.length - 4) +
+              '-' +
+              text.substring(text.length - 4);
+        } else if (text.length > 2) {
+          formatted += text.substring(2);
+        }
+      } else {
+        formatted += text;
+      }
+    }
 
-  Address({
-    required this.pais,
-    required this.estado,
-    required this.cidade,
-    required this.rua,
-    required this.numero,
-    this.complemento,
-  });
-
-  String resumo() {
-    final comp = (complemento == null || complemento!.trim().isEmpty)
-        ? ''
-        : ' - ${complemento!.trim()}';
-    return '$rua, $numero$comp - $cidade/$estado - $pais';
-  }
-}
-
-// ======= DIALOG DE ENDEREÇO =======
-
-class AddressDialog extends StatefulWidget {
-  const AddressDialog({super.key});
-
-  @override
-  State<AddressDialog> createState() => _AddressDialogState();
-}
-
-class _AddressDialogState extends State<AddressDialog> {
-  final _formKey = GlobalKey<FormState>();
-
-  final _paisCtrl = TextEditingController();
-  final _estadoCtrl = TextEditingController();
-  final _cidadeCtrl = TextEditingController();
-  final _ruaCtrl = TextEditingController();
-  final _numeroCtrl = TextEditingController();
-  final _complementoCtrl = TextEditingController();
-
-  @override
-  void dispose() {
-    _paisCtrl.dispose();
-    _estadoCtrl.dispose();
-    _cidadeCtrl.dispose();
-    _ruaCtrl.dispose();
-    _numeroCtrl.dispose();
-    _complementoCtrl.dispose();
-    super.dispose();
-  }
-
-  void _confirmar() {
-    final isValid = _formKey.currentState?.validate() ?? false;
-    if (!isValid) return;
-
-    final address = Address(
-      pais: _paisCtrl.text.trim(),
-      estado: _estadoCtrl.text.trim(),
-      cidade: _cidadeCtrl.text.trim(),
-      rua: _ruaCtrl.text.trim(),
-      numero: _numeroCtrl.text.trim(),
-      complemento: _complementoCtrl.text.trim().isEmpty
-          ? null
-          : _complementoCtrl.text.trim(),
-    );
-
-    Navigator.of(context).pop(address);
-  }
-
-  InputDecoration _dec(String label, IconData icon) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon, color: kPrimary),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.black),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: kPrimary, width: 2),
-      ),
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
+}
 
+class ValorInputFormatter extends TextInputFormatter {
   @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Selecionar Endereço'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              // País
-              TextFormField(
-                controller: _paisCtrl,
-                decoration: _dec('País *', Icons.public),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Informe o país' : null,
-              ),
-              const SizedBox(height: 12),
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    String digits = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    if (digits.isEmpty) digits = '0';
+    double value = double.parse(digits) / 100.0;
 
-              // Estado
-              TextFormField(
-                controller: _estadoCtrl,
-                decoration: _dec('Estado *', Icons.flag),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Informe o estado' : null,
-              ),
-              const SizedBox(height: 12),
+    final formatter = NumberFormat("#,##0.00", "pt_BR");
+    String newText = formatter.format(value);
 
-              // Cidade
-              TextFormField(
-                controller: _cidadeCtrl,
-                decoration: _dec('Cidade *', Icons.location_city),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Informe a cidade' : null,
-              ),
-              const SizedBox(height: 12),
-
-              // Rua
-              TextFormField(
-                controller: _ruaCtrl,
-                decoration: _dec('Rua *', Icons.map),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Informe a rua' : null,
-              ),
-              const SizedBox(height: 12),
-
-              // Número
-              TextFormField(
-                controller: _numeroCtrl,
-                keyboardType: TextInputType.number,
-                decoration: _dec('Número *', Icons.numbers),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Informe o número' : null,
-              ),
-              const SizedBox(height: 12),
-
-              // Complemento (opcional)
-              TextFormField(
-                controller: _complementoCtrl,
-                decoration: _dec(
-                  'Complemento (opcional)',
-                  Icons.add_location_alt,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: kPrimary,
-            foregroundColor: Colors.white,
-          ),
-          onPressed: _confirmar,
-          child: const Text('Confirmar'),
-        ),
-      ],
+    return TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
     );
   }
 }

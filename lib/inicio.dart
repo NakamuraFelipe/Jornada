@@ -1,4 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import './models/usuario_logado.dart';
 
 class Inicio extends StatefulWidget {
   const Inicio({super.key});
@@ -11,209 +15,292 @@ class _InicioState extends State<Inicio> {
   int _navIndex = 0;
   int _notificationCount = 5;
 
+  UsuarioLogado? usuario; // usuário logado
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarUsuarioLogado();
+  }
+
+  // Carrega o usuário logado e a foto
+  Future<void> _carregarUsuarioLogado() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      if (token == null) {
+        setState(() => loading = false);
+        debugPrint("Nenhum token encontrado.");
+        return;
+      }
+
+      // 1️⃣ Pega os dados do usuário
+      final response = await http.get(
+        Uri.parse('http://192.168.0.22:5000/usuario_logado'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['status'] == 'ok' && data['usuario'] != null) {
+          setState(() {
+            usuario = UsuarioLogado.fromJson(data['usuario']);
+          });
+
+          // 2️⃣ Busca a foto atualizada do usuário
+          await _carregarFotoUsuario(usuario!.idUsuario);
+        } else {
+          debugPrint("Erro ao carregar usuário: ${data['mensagem']}");
+        }
+      } else if (response.statusCode == 401) {
+        debugPrint("Token inválido ou expirado.");
+      } else {
+        debugPrint("Erro ao carregar usuário: ${response.body}");
+      }
+    } catch (e) {
+      debugPrint("Erro ao carregar usuário: $e");
+    } finally {
+      setState(() => loading = false);
+    }
+  }
+
+  // Busca a foto atualizada do usuário
+  Future<void> _carregarFotoUsuario(int idUsuario) async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.0.22:5000/usuario/$idUsuario/foto'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'ok' && data['foto'] != null) {
+          setState(() {
+            usuario!.foto = data['foto']; // atualiza a foto do usuário
+          });
+        }
+      } else {
+        debugPrint("Erro ao carregar foto: ${response.body}");
+      }
+    } catch (e) {
+      debugPrint("Erro ao carregar foto: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final Color primaryColor = const Color(0xFFD32F2F);
+    final ColorScheme cs = ColorScheme.fromSeed(
+      seedColor: primaryColor,
+      brightness: Brightness.light,
+      primary: primaryColor,
+      secondary: const Color(0xFFFF5252),
+      surface: const Color(0xFFF9F9F9),
+      primaryContainer: const Color(0xFFFFCDD2),
+      onPrimaryContainer: Colors.black87,
+    );
 
-    return Scaffold(
-      backgroundColor: cs.surface,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 180,
-            backgroundColor: cs.primary,
-            elevation: 0,
-            // borda inferior arredondada (cara de “barra hero”)
-            shape: const ContinuousRectangleBorder(
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
-              ),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: _HeaderGradient(
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsetsDirectional.only(
-                      start: 16,
-                      end: 16,
-                      top: 8,
+    return Theme(
+      data: ThemeData(colorScheme: cs, useMaterial3: true),
+      child: Scaffold(
+        backgroundColor: cs.surface,
+        body: loading
+            ? const Center(child: CircularProgressIndicator())
+            : CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    pinned: true,
+                    expandedHeight: 180,
+                    backgroundColor: cs.primary,
+                    elevation: 0,
+                    shape: const ContinuousRectangleBorder(
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(32),
+                        bottomRight: Radius.circular(32),
+                      ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Avatar + textos
-                        Row(
-                          children: [
-                            const CircleAvatar(
-                              radius: 30,
-                              backgroundImage: AssetImage(
-                                'assets/images/foto_perfil_teste.png',
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: _HeaderGradient(
+                        colorScheme: cs,
+                        child: SafeArea(
+                          bottom: false,
+                          child: Padding(
+                            padding: const EdgeInsetsDirectional.only(
+                                start: 16, end: 16, top: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  'Conta : Consultor',
-                                  style: Theme.of(context).textTheme.labelSmall
-                                      ?.copyWith(
-                                        color: Colors.white.withOpacity(.9),
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: .2,
-                                      ),
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 30,
+                                      backgroundImage: usuario?.foto != null
+                                          ? MemoryImage(
+                                              base64Decode(usuario!.foto!))
+                                          : const AssetImage(
+                                                  'assets/images/foto_perfil_teste.png')
+                                              as ImageProvider,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          'Conta: ${usuario?.cargo ?? "Desconhecido"}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelSmall
+                                              ?.copyWith(
+                                                color: Colors.white.withOpacity(.9),
+                                                fontWeight: FontWeight.w600,
+                                                letterSpacing: .2,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Olá, ${usuario?.nomeUsuario ?? "Usuário"}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Olá, Xamuel',
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                Row(
+                                  children: [
+                                    _NotificationButton(
+                                      count: _notificationCount,
+                                      onTap: () {
+                                        setState(() {
+                                          _notificationCount = 0;
+                                        });
+                                      },
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Image.asset('assets/images/logo.png',
+                                        height: 44),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
-                        // Logo + sininho com badge
-                        Row(
-                          children: [
-                            _NotificationButton(
-                              count: _notificationCount,
-                              onTap: () {
-                                // TODO: navegue para tela de notificações
-                                setState(() {
-                                  // exemplo: zera badge ao abrir
-                                  _notificationCount = 0;
-                                });
-                              },
-                            ),
-                            const SizedBox(width: 12),
-                            Image.asset('assets/images/logo.png', height: 44),
-                          ],
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
-          ),
-
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _WelcomeCard(
-                    title: 'Bem-vindo ao APP Ademicon.',
-                    subtitle: 'Você tem 5 notificações de seus LEADS',
-                    onNotifications: () {
-                      // TODO: navegue para notificações
-                      debugPrint('Abrir notificações');
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Grid de ações
-                  _ActionsGrid(
-                    items: [
-                      ActionItem(
-                        icon: Icons.search_rounded,
-                        label: 'Buscar Leads',
-                        onTap: () {
-                          // TODO: Buscar Leads
-                          debugPrint('Buscar Leads');
-                        },
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 40, 20, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _WelcomeCard(
+                            colorScheme: cs,
+                            title: 'Bem-vindo ao APP Ademicon.',
+                            subtitle:
+                                'Você tem $_notificationCount notificações de seus LEADS',
+                            onNotifications: () {
+                              debugPrint('Abrir notificações');
+                            },
+                          ),
+                          const SizedBox(height: 30),
+                          _ActionsGrid(
+                            items: [
+                              ActionItem(
+                                icon: Icons.search_rounded,
+                                label: 'Buscar Leads',
+                                onTap: () => Navigator.of(context)
+                                    .pushNamed('/buscar_leads'),
+                              ),
+                              ActionItem(
+                                icon: Icons.add_circle_rounded,
+                                label: 'Criar Leads',
+                                onTap: () =>
+                                    Navigator.of(context).pushNamed('/leads'),
+                              ),
+                              ActionItem(
+                                icon: Icons.groups_rounded,
+                                label: 'Meus Leads',
+                                onTap: () =>
+                                    Navigator.of(context).pushNamed('/meus_leads'),
+                              ),
+                              ActionItem(
+                                icon: Icons.bookmark_rounded,
+                                label: 'Leads Salvos',
+                                onTap: () => debugPrint('Leads Salvos'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 30),
+                        ],
                       ),
-                      ActionItem(
-                        icon: Icons.add_circle_rounded,
-                        label: 'Criar Leads',
-                        onTap: () {
-                          // TODO: Criar Leads
-                          debugPrint('Criar Leads');
-                        },
-                      ),
-                      ActionItem(
-                        icon: Icons.groups_rounded,
-                        label: 'Meus Leads',
-                        onTap: () {
-                          // TODO: Meus Leads
-                          debugPrint('Meus Leads');
-                        },
-                      ),
-                      ActionItem(
-                        icon: Icons.bookmark_rounded,
-                        label: 'Leads Salvos',
-                        onTap: () {
-                          // TODO: Leads Salvos
-                          debugPrint('Leads Salvos');
-                        },
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
+        bottomNavigationBar: NavigationBar(
+          backgroundColor: Colors.white,
+          indicatorColor: cs.primary.withOpacity(.1),
+          selectedIndex: _navIndex,
+          onDestinationSelected: (i) => setState(() => _navIndex = i),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'Início',
             ),
-          ),
-        ],
-      ),
-
-      // NavigationBar (Material 3)
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _navIndex,
-        onDestinationSelected: (i) {
-          setState(() => _navIndex = i);
-          // TODO: faça a navegação real conforme seu app
-          // ex.: if (i == 1) Navigator.push(...);
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Início',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.people_outline_rounded),
-            selectedIcon: Icon(Icons.people_rounded),
-            label: 'Leads',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Perfil',
-          ),
-        ],
+            NavigationDestination(
+              icon: Icon(Icons.people_outline_rounded),
+              selectedIcon: Icon(Icons.people_rounded),
+              label: 'Leads',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline_rounded),
+              selectedIcon: Icon(Icons.person_rounded),
+              label: 'Perfil',
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// Fundo do header com gradiente + brilho sutil
+/// Header com gradiente
 class _HeaderGradient extends StatelessWidget {
   final Widget child;
-  const _HeaderGradient({required this.child});
+  final ColorScheme colorScheme;
+  const _HeaderGradient({required this.child, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [cs.primary, cs.primary.withOpacity(0.85)],
+          colors: [
+            colorScheme.primary,
+            colorScheme.primary.withOpacity(0.85),
+            const Color(0xFFB71C1C)
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
       ),
       child: Stack(
         children: [
-          // brilho suave (ornamento)
           Positioned(
             right: -30,
             bottom: -20,
@@ -233,7 +320,7 @@ class _HeaderGradient extends StatelessWidget {
   }
 }
 
-/// Botão de sino com badge (sem dependências externas)
+/// Botão de sino com badge
 class _NotificationButton extends StatelessWidget {
   final int count;
   final VoidCallback onTap;
@@ -269,7 +356,7 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFD32F2F),
         borderRadius: BorderRadius.circular(999),
         boxShadow: [
           BoxShadow(
@@ -282,38 +369,38 @@ class _Badge extends StatelessWidget {
       child: Text(
         display,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Colors.black87,
-          fontWeight: FontWeight.w800,
-          letterSpacing: .2,
-        ),
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              letterSpacing: .2,
+            ),
       ),
     );
   }
 }
 
-/// Card de boas-vindas com gradiente/vidro e CTA
+/// Card de boas-vindas
 class _WelcomeCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onNotifications;
+  final ColorScheme colorScheme;
 
   const _WelcomeCard({
     required this.title,
     required this.subtitle,
     required this.onNotifications,
+    required this.colorScheme,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            cs.primaryContainer.withOpacity(.92),
-            cs.primaryContainer.withOpacity(.78),
+            colorScheme.primaryContainer.withOpacity(.92),
+            colorScheme.primaryContainer.withOpacity(.78),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -321,7 +408,7 @@ class _WelcomeCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: cs.primary.withOpacity(.22),
+            color: colorScheme.primary.withOpacity(.25),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
@@ -331,7 +418,6 @@ class _WelcomeCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // textos
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,52 +425,26 @@ class _WelcomeCard extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: cs.onPrimaryContainer,
-                    fontWeight: FontWeight.w800,
-                  ),
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w800,
+                      ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: cs.onPrimaryContainer.withOpacity(.90),
-                    fontWeight: FontWeight.w600,
-                  ),
+                        color: Colors.black87.withOpacity(.85),
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilledButton.tonalIcon(
-                      onPressed: onNotifications,
-                      icon: const Icon(Icons.notifications_rounded),
-                      label: const Text('Ver notificações'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        // TODO: alguma ação secundária (ex.: Dúvidas)
-                      },
-                      icon: const Icon(Icons.help_outline_rounded),
-                      label: const Text('Ajuda'),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 8),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          // logo decorativo
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              'assets/images/logo.png',
-              height: 64,
-              width: 64,
-              fit: BoxFit.contain,
-              color: Colors.white.withOpacity(.95),
-              colorBlendMode: BlendMode.modulate,
-            ),
+          IconButton(
+            onPressed: onNotifications,
+            icon: const Icon(Icons.notifications),
+            color: Colors.black87,
           ),
         ],
       ),
@@ -392,74 +452,64 @@ class _WelcomeCard extends StatelessWidget {
   }
 }
 
-/// Item de ação (ícone + rótulo) em estilo cartão
-class ActionItem {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  ActionItem({required this.icon, required this.label, required this.onTap});
-}
-
+/// Grid de ações
 class _ActionsGrid extends StatelessWidget {
   final List<ActionItem> items;
   const _ActionsGrid({required this.items});
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.sizeOf(context).width >= 480;
-    final crossAxisCount = isWide ? 4 : 2;
-
-    return GridView.builder(
+    return GridView.count(
+      crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: items.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-        mainAxisExtent: 112, // altura fixa elegante
-      ),
-      itemBuilder: (context, i) {
-        final item = items[i];
-        return _ActionCard(item: item);
-      },
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      children: items
+          .map(
+            (item) => GestureDetector(
+              onTap: item.onTap,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(item.icon, size: 36, color: const Color(0xFFD32F2F)),
+                    const SizedBox(height: 12),
+                    Text(
+                      item.label,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 }
 
-class _ActionCard extends StatelessWidget {
-  final ActionItem item;
-  const _ActionCard({required this.item});
+class ActionItem {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
 
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Material(
-      color: cs.surfaceVariant.withOpacity(.6),
-      borderRadius: BorderRadius.circular(16),
-      elevation: 0,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: item.onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(item.icon, size: 28, color: cs.primary),
-              const Spacer(),
-              Text(
-                item.label,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: cs.onSurface,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  ActionItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 }
