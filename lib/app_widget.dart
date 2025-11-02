@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 // ignore: unused_import
 import 'package:teste/Login_page.dart';
 import 'package:teste/app_controler.dart';
+import 'package:teste/buscar_lead.dart';
 import 'package:teste/criar_leads.dart';
 import 'package:teste/gerenciar_pap.dart';
 // ignore: undefined_hidden_name
@@ -31,13 +32,14 @@ class appWidget extends StatelessWidget {
           ),
           initialRoute: '/login',
           routes: {
-            '/': (context) => HomePage_Gestor(),
+            '/gestor': (context) => HomePage_Gestor(),
             '/login': (context) => LoginPage(),
             '/pap': (context) => GerenciarPAP(),
             '/home': (context) => HomePage(),
             '/inicio': (context) => Inicio(),
             '/leads': (context) => CreateLead(),
             '/meus_leads': (context) => MeusLeads(),
+            '/buscar_leads': (context) => BuscarLead(),
           },
         );
       },
