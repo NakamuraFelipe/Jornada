@@ -9,6 +9,7 @@ import 'package:teste/gerenciar_pap.dart';
 import 'package:teste/home_page.dart' hide AppControler;
 import 'package:teste/home_page_gestor.dart';
 import 'package:teste/inicio.dart';
+import 'package:teste/main.dart';
 import 'package:teste/meus_leads.dart';
 
 class appWidget extends StatelessWidget {
@@ -30,7 +31,7 @@ class appWidget extends StatelessWidget {
                 ? Brightness.dark
                 : Brightness.light,
           ),
-          initialRoute: '/login',
+          home: LoginPage(),
           routes: {
             '/gestor': (context) => HomePage_Gestor(),
             '/login': (context) => LoginPage(),

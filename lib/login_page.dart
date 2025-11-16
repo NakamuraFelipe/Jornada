@@ -89,7 +89,7 @@ class _LoginPageState extends State<LoginPage> {
           Center(child: Image.asset('assets/images/logo3.png', width: 160)),
           const SizedBox(height: 65),
           const Padding(
-            padding: EdgeInsets.only(left: 30),
+            padding: EdgeInsets.only(left: 0),
             child: Text(
               "LOGIN",
               style: TextStyle(
@@ -139,7 +139,9 @@ class _LoginPageState extends State<LoginPage> {
             prefixIcon: const Icon(Icons.lock, color: Color(0xFFD32F2F)),
             labelText: 'Senha',
             suffixIcon: IconButton(
-              icon: Icon(passwordText ? Icons.visibility : Icons.visibility_off),
+              icon: Icon(
+                passwordText ? Icons.visibility : Icons.visibility_off,
+              ),
               onPressed: () => setState(() => passwordText = !passwordText),
             ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
@@ -170,7 +172,7 @@ class _LoginPageState extends State<LoginPage> {
                   print('Login OK: ${usuario.nomeUsuario}');
                   Navigator.pushReplacementNamed(
                     context,
-                    '/inicio',
+                    '/home ',
                     arguments: usuario,
                   );
                 } else {
@@ -182,14 +184,20 @@ class _LoginPageState extends State<LoginPage> {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFD32F2F),
           padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
         ),
         child: loading
             ? const CircularProgressIndicator(color: Colors.white)
             : const Text(
                 'Login',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
       ),
     );

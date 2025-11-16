@@ -131,7 +131,10 @@ class _InicioState extends State<Inicio> {
                           bottom: false,
                           child: Padding(
                             padding: const EdgeInsetsDirectional.only(
-                                start: 16, end: 16, top: 8),
+                              start: 16,
+                              end: 16,
+                              top: 8,
+                            ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -141,10 +144,12 @@ class _InicioState extends State<Inicio> {
                                       radius: 30,
                                       backgroundImage: usuario?.foto != null
                                           ? MemoryImage(
-                                              base64Decode(usuario!.foto!))
+                                              base64Decode(usuario!.foto!),
+                                            )
                                           : const AssetImage(
-                                                  'assets/images/foto_perfil_teste.png')
-                                              as ImageProvider,
+                                                  'assets/images/foto_perfil_teste.png',
+                                                )
+                                                as ImageProvider,
                                     ),
                                     const SizedBox(width: 12),
                                     Column(
@@ -159,7 +164,9 @@ class _InicioState extends State<Inicio> {
                                               .textTheme
                                               .labelSmall
                                               ?.copyWith(
-                                                color: Colors.white.withOpacity(.9),
+                                                color: Colors.white.withOpacity(
+                                                  .9,
+                                                ),
                                                 fontWeight: FontWeight.w600,
                                                 letterSpacing: .2,
                                               ),
@@ -190,8 +197,10 @@ class _InicioState extends State<Inicio> {
                                       },
                                     ),
                                     const SizedBox(width: 12),
-                                    Image.asset('assets/images/logo.png',
-                                        height: 44),
+                                    Image.asset(
+                                      'assets/images/logo.png',
+                                      height: 44,
+                                    ),
                                   ],
                                 ),
                               ],
@@ -222,8 +231,9 @@ class _InicioState extends State<Inicio> {
                               ActionItem(
                                 icon: Icons.search_rounded,
                                 label: 'Buscar Leads',
-                                onTap: () => Navigator.of(context)
-                                    .pushNamed('/buscar_leads'),
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed('/buscar_leads'),
                               ),
                               ActionItem(
                                 icon: Icons.add_circle_rounded,
@@ -234,8 +244,9 @@ class _InicioState extends State<Inicio> {
                               ActionItem(
                                 icon: Icons.groups_rounded,
                                 label: 'Meus Leads',
-                                onTap: () =>
-                                    Navigator.of(context).pushNamed('/meus_leads'),
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed('/meus_leads'),
                               ),
                               ActionItem(
                                 icon: Icons.bookmark_rounded,
@@ -251,29 +262,6 @@ class _InicioState extends State<Inicio> {
                   ),
                 ],
               ),
-        bottomNavigationBar: NavigationBar(
-          backgroundColor: Colors.white,
-          indicatorColor: cs.primary.withOpacity(.1),
-          selectedIndex: _navIndex,
-          onDestinationSelected: (i) => setState(() => _navIndex = i),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'Início',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.people_outline_rounded),
-              selectedIcon: Icon(Icons.people_rounded),
-              label: 'Leads',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline_rounded),
-              selectedIcon: Icon(Icons.person_rounded),
-              label: 'Perfil',
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -293,7 +281,7 @@ class _HeaderGradient extends StatelessWidget {
           colors: [
             colorScheme.primary,
             colorScheme.primary.withOpacity(0.85),
-            const Color(0xFFB71C1C)
+            const Color(0xFFB71C1C),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -369,10 +357,10 @@ class _Badge extends StatelessWidget {
       child: Text(
         display,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              letterSpacing: .2,
-            ),
+          color: Colors.white,
+          fontWeight: FontWeight.w800,
+          letterSpacing: .2,
+        ),
       ),
     );
   }
@@ -425,17 +413,17 @@ class _WelcomeCard extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.black87.withOpacity(.85),
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: Colors.black87.withOpacity(.85),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 8),
               ],
@@ -489,8 +477,8 @@ class _ActionsGrid extends StatelessWidget {
                     Text(
                       item.label,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -507,9 +495,5 @@ class ActionItem {
   final String label;
   final VoidCallback onTap;
 
-  ActionItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+  ActionItem({required this.icon, required this.label, required this.onTap});
 }
