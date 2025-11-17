@@ -17,9 +17,10 @@ class _LoginPageState extends State<LoginPage> {
   bool passwordText = true;
   bool loading = false;
 
-  // 🔹 Função de login que retorna o usuário logado e salva token localmente
+  // Função de login
   Future<UsuarioLogado?> loginUser(String email, String password) async {
-    final url = Uri.parse("http://192.168.0.22:5000/login"); // IP do Flask
+    final url = Uri.parse("http://192.168.0.22:5000/login");
+
     try {
       final response = await http.post(
         url,
@@ -29,20 +30,22 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+
         if (data['status'] == 'ok') {
-          // Salva token localmente
+          // salva token no storage
           final token = data['token'];
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('token', token);
 
-          // Retorna o usuário com token incluído
+          // insere token no JSON e cria o objeto usuario
           final usuarioJson = data['usuario'];
-          usuarioJson['token'] = token; // ⚠️ adiciona token ao objeto
+          usuarioJson['token'] = token;
+
           return UsuarioLogado.fromJson(usuarioJson);
         }
-      } else {
-        print('Erro no login: ${response.body}');
       }
+
+      print('Erro no login: ${response.body}');
       return null;
     } catch (e) {
       print('Erro de conexão: $e');
@@ -89,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
           Center(child: Image.asset('assets/images/logo3.png', width: 160)),
           const SizedBox(height: 65),
           const Padding(
-            padding: EdgeInsets.only(left: 0),
+            padding: EdgeInsets.only(left: 30),
             child: Text(
               "LOGIN",
               style: TextStyle(
@@ -139,9 +142,7 @@ class _LoginPageState extends State<LoginPage> {
             prefixIcon: const Icon(Icons.lock, color: Color(0xFFD32F2F)),
             labelText: 'Senha',
             suffixIcon: IconButton(
-              icon: Icon(
-                passwordText ? Icons.visibility : Icons.visibility_off,
-              ),
+              icon: Icon(passwordText ? Icons.visibility : Icons.visibility_off),
               onPressed: () => setState(() => passwordText = !passwordText),
             ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
@@ -169,12 +170,21 @@ class _LoginPageState extends State<LoginPage> {
                 setState(() => loading = false);
 
                 if (usuario != null) {
-                  print('Login OK: ${usuario.nomeUsuario}');
-                  Navigator.pushReplacementNamed(
-                    context,
-                    '/home ',
-                    arguments: usuario,
-                  );
+                  print("cargo: ${usuario.cargo}");
+
+                  if (usuario.cargo.toLowerCase() == "gestor") {
+                    Navigator.pushReplacementNamed(
+                      context,
+                      '/gestor',
+                      arguments: usuario,
+                    );
+                  } else {
+                    Navigator.pushReplacementNamed(
+                      context,
+                      '/inicio',
+                      arguments: usuario,
+                    );
+                  }
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Email ou senha incorretos')),
@@ -184,20 +194,14 @@ class _LoginPageState extends State<LoginPage> {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFD32F2F),
           padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         ),
         child: loading
             ? const CircularProgressIndicator(color: Colors.white)
             : const Text(
                 'Login',
-
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );

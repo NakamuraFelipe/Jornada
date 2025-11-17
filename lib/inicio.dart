@@ -12,6 +12,7 @@ class Inicio extends StatefulWidget {
 }
 
 class _InicioState extends State<Inicio> {
+  // ignore: unused_field
   int _navIndex = 0;
   int _notificationCount = 5;
 
