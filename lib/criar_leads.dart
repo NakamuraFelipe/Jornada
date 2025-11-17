@@ -89,8 +89,9 @@ class _AddressDialogState extends State<AddressDialog> {
       cidade: _cidadeCtrl.text.trim(),
       rua: _ruaCtrl.text.trim(),
       numero: _numeroCtrl.text.trim(),
-      complemento:
-          _complementoCtrl.text.trim().isEmpty ? null : _complementoCtrl.text.trim(),
+      complemento: _complementoCtrl.text.trim().isEmpty
+          ? null
+          : _complementoCtrl.text.trim(),
     );
 
     Navigator.of(context).pop(address);
@@ -123,37 +124,45 @@ class _AddressDialogState extends State<AddressDialog> {
               TextFormField(
                 controller: _paisCtrl,
                 decoration: _dec('País *', Icons.public),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe o país' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Informe o país' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _estadoCtrl,
                 decoration: _dec('Estado *', Icons.flag),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe o estado' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Informe o estado' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _cidadeCtrl,
                 decoration: _dec('Cidade *', Icons.location_city),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe a cidade' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Informe a cidade' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _ruaCtrl,
                 decoration: _dec('Rua *', Icons.map),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe a rua' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Informe a rua' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _numeroCtrl,
                 keyboardType: TextInputType.number,
                 decoration: _dec('Número *', Icons.numbers),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe o número' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Informe o número' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _complementoCtrl,
-                decoration: _dec('Complemento (opcional)', Icons.add_location_alt),
+                decoration: _dec(
+                  'Complemento (opcional)',
+                  Icons.add_location_alt,
+                ),
               ),
             ],
           ),
@@ -161,15 +170,17 @@ class _AddressDialogState extends State<AddressDialog> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar')),
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
         ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: kPrimary,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: _confirmar,
-            child: const Text('Confirmar')),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: kPrimary,
+            foregroundColor: Colors.white,
+          ),
+          onPressed: _confirmar,
+          child: const Text('Confirmar'),
+        ),
       ],
     );
   }
@@ -285,7 +296,8 @@ class _CreateLeadState extends State<CreateLead> {
                     ),
                   ),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Informe o nome do lead';
+                    if (v == null || v.trim().isEmpty)
+                      return 'Informe o nome do lead';
                     if (v.trim().length < 2) return 'Nome muito curto';
                     return null;
                   },
@@ -311,8 +323,10 @@ class _CreateLeadState extends State<CreateLead> {
                     ),
                   ),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Informe o telefone';
-                    if (v.replaceAll(RegExp(r'\D'), '').length < 10) return 'Telefone incompleto';
+                    if (v == null || v.trim().isEmpty)
+                      return 'Informe o telefone';
+                    if (v.replaceAll(RegExp(r'\D'), '').length < 10)
+                      return 'Telefone incompleto';
                     return null;
                   },
                 ),
@@ -361,9 +375,14 @@ class _CreateLeadState extends State<CreateLead> {
                             const Spacer(),
                             TextButton.icon(
                               onPressed: _abrirDialogEndereco,
-                              icon: const Icon(Icons.edit_location_alt, color: kPrimary),
+                              icon: const Icon(
+                                Icons.edit_location_alt,
+                                color: kPrimary,
+                              ),
                               label: Text(
-                                _endereco == null ? 'Escolher endereço' : 'Alterar',
+                                _endereco == null
+                                    ? 'Escolher endereço'
+                                    : 'Alterar',
                                 style: const TextStyle(
                                   color: kPrimary,
                                   fontWeight: FontWeight.bold,
@@ -404,8 +423,14 @@ class _CreateLeadState extends State<CreateLead> {
                   items: const [
                     DropdownMenuItem(value: 'Imovel', child: Text('Imóvel')),
                     DropdownMenuItem(value: 'Veículo', child: Text('Veículo')),
-                    DropdownMenuItem(value: 'Serviços', child: Text('Serviços')),
-                    DropdownMenuItem(value: 'Bens Móveis', child: Text('Bens Móveis')),
+                    DropdownMenuItem(
+                      value: 'Serviços',
+                      child: Text('Serviços'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Bens Móveis',
+                      child: Text('Bens Móveis'),
+                    ),
                   ],
                   onChanged: (val) => setState(() => _categoria = val),
                 ),
@@ -479,7 +504,9 @@ class _CreateLeadState extends State<CreateLead> {
 class TelefoneInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     var text = newValue.text.replaceAll(RegExp(r'\D'), '');
     if (text.length > 11) text = text.substring(0, 11);
 
@@ -489,7 +516,8 @@ class TelefoneInputFormatter extends TextInputFormatter {
       if (text.length >= 2) {
         formatted += text.substring(0, 2) + ') ';
         if (text.length >= 7) {
-          formatted += text.substring(2, text.length - 4) +
+          formatted +=
+              text.substring(2, text.length - 4) +
               '-' +
               text.substring(text.length - 4);
         } else if (text.length > 2) {
@@ -510,7 +538,9 @@ class TelefoneInputFormatter extends TextInputFormatter {
 class ValorInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     String digits = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
     if (digits.isEmpty) digits = '0';
     double value = double.parse(digits) / 100.0;
