@@ -13,7 +13,7 @@ class Inicio extends StatefulWidget {
 
 class _InicioState extends State<Inicio> {
   // ignore: unused_field
-  int _navIndex = 0;
+  final int _navIndex = 0;
   int _notificationCount = 5;
 
   UsuarioLogado? usuario; // usuário logado
@@ -39,7 +39,7 @@ class _InicioState extends State<Inicio> {
 
       // 1️⃣ Pega os dados do usuário
       final response = await http.get(
-        Uri.parse('http://192.168.0.22:5000/usuario_logado'),
+        Uri.parse('http://192.168.0.11:5000/usuario_logado'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -75,7 +75,7 @@ class _InicioState extends State<Inicio> {
   Future<void> _carregarFotoUsuario(int idUsuario) async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.0.22:5000/usuario/$idUsuario/foto'),
+        Uri.parse('http://192.168.0.11:5000/usuario/$idUsuario/foto'),
       );
 
       if (response.statusCode == 200) {

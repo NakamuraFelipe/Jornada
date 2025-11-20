@@ -42,6 +42,7 @@ class appWidget extends StatelessWidget {
             '/leads': (context) => CreateLead(),
             '/meus_leads': (context) => MeusLeads(),
             '/buscar_leads': (context) => BuscarLead(),
+            '/home_screen': (context) => HomeScreen(),
           },
         );
       },
