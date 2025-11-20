@@ -1,57 +1,87 @@
+// ignore_for_file: unused_import
+import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart'; // para formatar valores monetários
+import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-// ===== MODELOS =====
+/// ==================== MODELS ====================
 class Address {
+  final String? cep;
   final String pais;
   final String estado;
   final String cidade;
+  final String bairro;
   final String rua;
   final String numero;
   final String? complemento;
 
   Address({
+    this.cep,
     required this.pais,
     required this.estado,
     required this.cidade,
+    required this.bairro,
     required this.rua,
     required this.numero,
     this.complemento,
   });
 
-  String resumo() {
-    final comp = (complemento == null || complemento!.trim().isEmpty)
-        ? ''
-        : ' - ${complemento!.trim()}';
-    return '$rua, $numero$comp - $cidade/$estado - $pais';
-  }
+  Map<String, dynamic> toJson() => {
+        'cep': cep,
+        'pais': pais,
+        'estado': estado,
+        'cidade': cidade,
+        'bairro': bairro,
+        'rua': rua,
+        'numero': numero,
+        'complemento': complemento,
+      };
 
-  @override
-  String toString() => resumo();
+  String resumo() {
+    return '${rua}, $numero${complemento != null ? ' - $complemento' : ''}, $bairro, $cidade - $estado, $pais${cep != null ? ', CEP: $cep' : ''}';
+  }
 }
 
 class Lead {
-  final String nome;
+  final String nome_local;
+  final String responsavel;
   final String telefone;
   final Address endereco;
+  final String status;
   final String? categoria;
   final String? observacao;
+  final double? valor;
 
   Lead({
-    required this.nome,
+    required this.nome_local,
+    required this.responsavel,
     required this.telefone,
     required this.endereco,
+    required this.status,
     this.categoria,
     this.observacao,
+    this.valor,
   });
 
-  @override
-  String toString() =>
-      'Lead(nome: $nome, telefone: $telefone, endereco: ${endereco.resumo()}, categoria: $categoria, observacao: $observacao)';
+  Map<String, dynamic> toJson() => {
+      'nome_local': nome_local,
+      'nome_responsavel': responsavel,
+      'telefone': telefone,
+      'endereco': endereco.toJson(),
+      'estado_leads': status,
+      'categoria_venda': categoria,
+      'observacao': observacao,
+      'valor_proposta': valor,
+    };
 }
 
-// ===== DIALOG DE ENDEREÇO =====
+/// ==================== CONSTANTES ====================
+const kPrimary = Color(0xFFD32F2F);
+
+/// ==================== ADDRESS DIALOG ====================
 class AddressDialog extends StatefulWidget {
   const AddressDialog({super.key});
 
@@ -62,18 +92,22 @@ class AddressDialog extends StatefulWidget {
 class _AddressDialogState extends State<AddressDialog> {
   final _formKey = GlobalKey<FormState>();
 
+  final _cepCtrl = TextEditingController();
   final _paisCtrl = TextEditingController();
   final _estadoCtrl = TextEditingController();
   final _cidadeCtrl = TextEditingController();
+  final _bairroCtrl = TextEditingController();
   final _ruaCtrl = TextEditingController();
   final _numeroCtrl = TextEditingController();
   final _complementoCtrl = TextEditingController();
 
   @override
   void dispose() {
+    _cepCtrl.dispose();
     _paisCtrl.dispose();
     _estadoCtrl.dispose();
     _cidadeCtrl.dispose();
+    _bairroCtrl.dispose();
     _ruaCtrl.dispose();
     _numeroCtrl.dispose();
     _complementoCtrl.dispose();
@@ -84,9 +118,11 @@ class _AddressDialogState extends State<AddressDialog> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final address = Address(
+      cep: _cepCtrl.text.trim().isEmpty ? null : _cepCtrl.text.trim(),
       pais: _paisCtrl.text.trim(),
       estado: _estadoCtrl.text.trim(),
       cidade: _cidadeCtrl.text.trim(),
+      bairro: _bairroCtrl.text.trim(),
       rua: _ruaCtrl.text.trim(),
       numero: _numeroCtrl.text.trim(),
       complemento: _complementoCtrl.text.trim().isEmpty
@@ -97,9 +133,10 @@ class _AddressDialogState extends State<AddressDialog> {
     Navigator.of(context).pop(address);
   }
 
-  InputDecoration _dec(String label, IconData icon) {
+  InputDecoration _dec(String label, IconData icon, {String? hint}) {
     return InputDecoration(
       labelText: label,
+      hintText: hint,
       prefixIcon: Icon(icon, color: kPrimary),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -122,6 +159,12 @@ class _AddressDialogState extends State<AddressDialog> {
           child: Column(
             children: [
               TextFormField(
+                controller: _cepCtrl,
+                keyboardType: TextInputType.number,
+                decoration: _dec('CEP (opcional)', Icons.local_post_office, hint: 'Ex: 12345-678'),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
                 controller: _paisCtrl,
                 decoration: _dec('País *', Icons.public),
                 validator: (v) =>
@@ -143,6 +186,13 @@ class _AddressDialogState extends State<AddressDialog> {
               ),
               const SizedBox(height: 12),
               TextFormField(
+                controller: _bairroCtrl,
+                decoration: _dec('Bairro *', Icons.home_work),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Informe o bairro' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
                 controller: _ruaCtrl,
                 decoration: _dec('Rua *', Icons.map),
                 validator: (v) =>
@@ -159,10 +209,7 @@ class _AddressDialogState extends State<AddressDialog> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _complementoCtrl,
-                decoration: _dec(
-                  'Complemento (opcional)',
-                  Icons.add_location_alt,
-                ),
+                decoration: _dec('Complemento (opcional)', Icons.add_location_alt),
               ),
             ],
           ),
@@ -186,9 +233,7 @@ class _AddressDialogState extends State<AddressDialog> {
   }
 }
 
-// ===== CREATE LEAD =====
-const kPrimary = Color(0xFFD32F2F);
-
+/// ==================== CREATE LEAD ====================
 class CreateLead extends StatefulWidget {
   const CreateLead({super.key});
 
@@ -198,23 +243,27 @@ class CreateLead extends StatefulWidget {
 
 class _CreateLeadState extends State<CreateLead> {
   final _formKey = GlobalKey<FormState>();
-  final _nomeCtrl = TextEditingController();
+
+  final _responsavelCtrl = TextEditingController();
   final _telefoneCtrl = TextEditingController();
   final _valorCtrl = TextEditingController();
   final _obsCtrl = TextEditingController();
+  final _nome_localCtrl = TextEditingController();
 
   String? _categoria;
+  String? _statusLead;
   Address? _endereco;
 
-  // ignore: unused_field
+  bool _saving = false;
   final _formatter = NumberFormat("#,##0.00", "pt_BR");
 
   @override
   void dispose() {
-    _nomeCtrl.dispose();
+    _responsavelCtrl.dispose();
     _telefoneCtrl.dispose();
     _valorCtrl.dispose();
     _obsCtrl.dispose();
+    _nome_localCtrl.dispose();
     super.dispose();
   }
 
@@ -227,8 +276,18 @@ class _CreateLeadState extends State<CreateLead> {
     if (selecionado != null) setState(() => _endereco = selecionado);
   }
 
-  void _salvar() {
+  String _formatarTelefoneParaBanco(String input) {
+    final digits = input.replaceAll(RegExp(r'\D'), '');
+    if (digits.length < 13) return input;
+    final ddi = digits.substring(0, 2);
+    final ddd = digits.substring(2, 4);
+    final numero = digits.substring(4);
+    return '+$ddi-$ddd-$numero';
+  }
+
+  Future<void> _salvar() async {
     final isValid = _formKey.currentState?.validate() ?? false;
+
     if (_endereco == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -239,23 +298,72 @@ class _CreateLeadState extends State<CreateLead> {
       return;
     }
 
-    if (isValid) {
-      final lead = Lead(
-        nome: _nomeCtrl.text.trim(),
-        telefone: _telefoneCtrl.text.trim(),
-        endereco: _endereco!,
-        categoria: _categoria,
-        observacao: _obsCtrl.text.trim().isEmpty ? null : _obsCtrl.text.trim(),
-      );
-      print(lead);
-
+    if (_statusLead == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Lead salvo com sucesso!'),
+          content: Text('Selecione um status do lead.'),
           backgroundColor: kPrimary,
         ),
       );
-      Navigator.of(context).pop(lead);
+      return;
+    }
+
+    if (!isValid) return;
+    setState(() => _saving = true);
+
+    final valorParsed = double.tryParse(
+        _valorCtrl.text.replaceAll('.', '').replaceAll(',', '.'));
+    final telefoneFormatado = _formatarTelefoneParaBanco(_telefoneCtrl.text);
+
+    final lead = Lead(
+      nome_local: _nome_localCtrl.text.trim(),
+      responsavel: _responsavelCtrl.text.trim(),
+      telefone: telefoneFormatado,
+      endereco: _endereco!,
+      status: _statusLead!,
+      categoria: _categoria,
+      observacao: _obsCtrl.text.trim().isEmpty ? null : _obsCtrl.text.trim(),
+      valor: valorParsed,
+    );
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      final uri = Uri.parse('http://192.168.0.11:5000/criar_lead');
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final resp = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(lead.toJson()),
+      );
+
+      if (resp.statusCode == 200 || resp.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Lead salvo com sucesso!'),
+            backgroundColor: kPrimary,
+          ),
+        );
+        Navigator.of(context).pop(true);
+      } else {
+        String msg = 'Erro ao salvar lead (${resp.statusCode})';
+        try {
+          final data = jsonDecode(resp.body);
+          if (data['mensagem'] != null) msg = data['mensagem'];
+        } catch (_) {}
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro de conexão: $e')),
+      );
+    } finally {
+      setState(() => _saving = false);
     }
   }
 
@@ -275,276 +383,296 @@ class _CreateLeadState extends State<CreateLead> {
           backgroundColor: kPrimary,
           foregroundColor: Colors.white,
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Nome
-                TextFormField(
-                  controller: _nomeCtrl,
-                  textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: 'Nome do lead *',
-                    prefixIcon: const Icon(Icons.person, color: kPrimary),
-                    enabledBorder: themeInputBorder,
-                    focusedBorder: themeInputBorder.copyWith(
-                      borderSide: const BorderSide(color: kPrimary, width: 2),
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    /// Nome da Empresa
+                    TextFormField(
+                      controller: _nome_localCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Nome da Empresa *',
+                        prefixIcon: const Icon(Icons.business, color: kPrimary),
+                        enabledBorder: themeInputBorder,
+                        focusedBorder: themeInputBorder.copyWith(
+                          borderSide: const BorderSide(color: kPrimary, width: 2),
+                        ),
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Informe o nome da empresa'
+                          : null,
                     ),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty)
-                      return 'Informe o nome do lead';
-                    if (v.trim().length < 2) return 'Nome muito curto';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                // Telefone
-                TextFormField(
-                  controller: _telefoneCtrl,
-                  textInputAction: TextInputAction.next,
-                  keyboardType: TextInputType.phone,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    TelefoneInputFormatter(),
-                  ],
-                  decoration: InputDecoration(
-                    labelText: 'Telefone *',
-                    prefixIcon: const Icon(Icons.phone, color: kPrimary),
-                    hintText: '(43) 99999-9999',
-                    enabledBorder: themeInputBorder,
-                    focusedBorder: themeInputBorder.copyWith(
-                      borderSide: const BorderSide(color: kPrimary, width: 2),
+                    /// Responsável
+                    TextFormField(
+                      controller: _responsavelCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Nome do Responsável *',
+                        prefixIcon: const Icon(Icons.person, color: kPrimary),
+                        enabledBorder: themeInputBorder,
+                        focusedBorder: themeInputBorder.copyWith(
+                          borderSide: const BorderSide(color: kPrimary, width: 2),
+                        ),
+                      ),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Informe o responsável' : null,
                     ),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty)
-                      return 'Informe o telefone';
-                    if (v.replaceAll(RegExp(r'\D'), '').length < 10)
-                      return 'Telefone incompleto';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                // Valor da proposta
-                TextFormField(
-                  controller: _valorCtrl,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                    ValorInputFormatter(),
-                  ],
-                  decoration: InputDecoration(
-                    labelText: 'Valor da proposta',
-                    prefixIcon: const Icon(Icons.attach_money, color: kPrimary),
-                    hintText: '0,00',
-                    enabledBorder: themeInputBorder,
-                    focusedBorder: themeInputBorder.copyWith(
-                      borderSide: const BorderSide(color: kPrimary, width: 2),
+                    /// Telefone
+                    TextFormField(
+                      controller: _telefoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        TelefoneInputFormatter(),
+                      ],
+                      decoration: InputDecoration(
+                        labelText: 'Telefone *',
+                        hintText: '+55 (43) 90000-0001',
+                        prefixIcon: const Icon(Icons.phone, color: kPrimary),
+                        enabledBorder: themeInputBorder,
+                        focusedBorder: themeInputBorder.copyWith(
+                          borderSide: const BorderSide(color: kPrimary, width: 2),
+                        ),
+                      ),
+                      validator: (v) =>
+                          (v == null || v.trim().length < 17)
+                              ? 'Informe um telefone válido'
+                              : null,
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                // Endereço
-                Card(
-                  elevation: 0,
-                  color: const Color(0xFFF7F7F7),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
+                    /// Endereço
+                    Card(
+                      elevation: 0,
+                      color: const Color(0xFFF7F7F7),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
                           children: [
-                            const Icon(Icons.location_on, color: kPrimary),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Endereço *',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            const Spacer(),
-                            TextButton.icon(
-                              onPressed: _abrirDialogEndereco,
-                              icon: const Icon(
-                                Icons.edit_location_alt,
-                                color: kPrimary,
-                              ),
-                              label: Text(
-                                _endereco == null
-                                    ? 'Escolher endereço'
-                                    : 'Alterar',
-                                style: const TextStyle(
-                                  color: kPrimary,
-                                  fontWeight: FontWeight.bold,
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on, color: kPrimary),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Endereço *',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
-                              ),
+                                const Spacer(),
+                                TextButton.icon(
+                                  onPressed: _abrirDialogEndereco,
+                                  icon: const Icon(Icons.edit_location_alt,
+                                      color: kPrimary),
+                                  label: Text(
+                                    _endereco == null ? 'Escolher' : 'Alterar',
+                                    style: const TextStyle(
+                                      color: kPrimary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _endereco == null
+                                  ? 'Nenhum endereço selecionado.'
+                                  : _endereco!.resumo(),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        if (_endereco == null)
-                          const Text(
-                            'Nenhum endereço selecionado.',
-                            style: TextStyle(color: Colors.grey),
-                          )
-                        else
-                          Text(
-                            _endereco!.resumo(),
-                            style: const TextStyle(fontSize: 14),
-                          ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    /// Status do Lead
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        labelText: 'Status do Lead *',
+                        prefixIcon: const Icon(Icons.flag, color: kPrimary),
+                        enabledBorder: themeInputBorder,
+                        focusedBorder: themeInputBorder.copyWith(
+                          borderSide: const BorderSide(color: kPrimary, width: 2),
+                        ),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'aberta', child: Text('Aberta')),
+                        DropdownMenuItem(value: 'conexao', child: Text('Conexão')),
+                        DropdownMenuItem(value: 'negociacao', child: Text('Negociação')),
+                        DropdownMenuItem(value: 'fechada', child: Text('Fechada')),
                       ],
+                      value: _statusLead,
+                      onChanged: (v) => setState(() => _statusLead = v),
+                      validator: (v) => v == null ? 'Selecione um status' : null,
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                // Categoria
-                DropdownButtonFormField<String>(
-                  value: _categoria,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: 'Categoria de venda (opcional)',
-                    prefixIcon: const Icon(Icons.category, color: kPrimary),
-                    enabledBorder: themeInputBorder,
-                    focusedBorder: themeInputBorder.copyWith(
-                      borderSide: const BorderSide(color: kPrimary, width: 2),
-                    ),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'Imovel', child: Text('Imóvel')),
-                    DropdownMenuItem(value: 'Veículo', child: Text('Veículo')),
-                    DropdownMenuItem(
-                      value: 'Serviços',
-                      child: Text('Serviços'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Bens Móveis',
-                      child: Text('Bens Móveis'),
-                    ),
-                  ],
-                  onChanged: (val) => setState(() => _categoria = val),
-                ),
-                const SizedBox(height: 16),
-
-                // Observação
-                TextFormField(
-                  controller: _obsCtrl,
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    labelText: 'Observação (opcional)',
-                    alignLabelWithHint: true,
-                    prefixIcon: const Icon(Icons.notes, color: kPrimary),
-                    enabledBorder: themeInputBorder,
-                    focusedBorder: themeInputBorder.copyWith(
-                      borderSide: const BorderSide(color: kPrimary, width: 2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Botões
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _salvar,
-                        icon: const Icon(Icons.save),
-                        label: const Text('Salvar lead'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kPrimary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                    /// Valor
+                    TextFormField(
+                      controller: _valorCtrl,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                        ValorInputFormatter(),
+                      ],
+                      decoration: InputDecoration(
+                        labelText: 'Valor da Proposta',
+                        prefixIcon: const Icon(Icons.attach_money, color: kPrimary),
+                        enabledBorder: themeInputBorder,
+                        focusedBorder: themeInputBorder.copyWith(
+                          borderSide: const BorderSide(color: kPrimary, width: 2),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close, color: kPrimary),
-                        label: const Text(
-                          'Cancelar',
-                          style: TextStyle(color: kPrimary),
+                    const SizedBox(height: 16),
+
+                    /// Categoria
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        labelText: 'Categoria (opcional)',
+                        prefixIcon: const Icon(Icons.category, color: kPrimary),
+                        enabledBorder: themeInputBorder,
+                        focusedBorder: themeInputBorder.copyWith(
+                          borderSide: const BorderSide(color: kPrimary, width: 2),
                         ),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: kPrimary),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'Imovel', child: Text('Imóvel')),
+                        DropdownMenuItem(value: 'Veículo', child: Text('Veículo')),
+                        DropdownMenuItem(value: 'Serviços', child: Text('Serviços')),
+                        DropdownMenuItem(value: 'Bens Móveis', child: Text('Bens Móveis')),
+                      ],
+                      value: _categoria,
+                      onChanged: (v) => setState(() => _categoria = v),
+                    ),
+                    const SizedBox(height: 16),
+
+                    /// Observação
+                    TextFormField(
+                      controller: _obsCtrl,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        labelText: 'Observação (opcional)',
+                        prefixIcon: const Icon(Icons.notes, color: kPrimary),
+                        alignLabelWithHint: true,
+                        enabledBorder: themeInputBorder,
+                        focusedBorder: themeInputBorder.copyWith(
+                          borderSide: const BorderSide(color: kPrimary, width: 2),
                         ),
                       ),
                     ),
+                    const SizedBox(height: 24),
+
+                    ElevatedButton(
+                      onPressed: _saving ? null : _salvar,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: kPrimary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _saving
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text('Salvar', style: TextStyle(fontSize: 16)),
+                    ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ======== FORMATADORES ========
-
+/// ============= FORMATADOR DE TELEFONE =============
 class TelefoneInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    var text = newValue.text.replaceAll(RegExp(r'\D'), '');
-    if (text.length > 11) text = text.substring(0, 11);
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    // Remove tudo que não for número
+    String digits = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
 
-    String formatted = '';
-    if (text.isNotEmpty) {
-      formatted = '(';
-      if (text.length >= 2) {
-        formatted += text.substring(0, 2) + ') ';
-        if (text.length >= 7) {
-          formatted +=
-              text.substring(2, text.length - 4) +
-              '-' +
-              text.substring(text.length - 4);
-        } else if (text.length > 2) {
-          formatted += text.substring(2);
-        }
+    if (digits.isEmpty) {
+      return const TextEditingValue(text: '');
+    }
+
+    // Limitar: DDI(2) + DDD(2) + Número(9) = 13 dígitos
+    if (digits.length > 13) {
+      digits = digits.substring(0, 13);
+    }
+
+    String formatted = '+';
+
+    // DDI (2 dígitos)
+    if (digits.length >= 1) {
+      formatted += digits.substring(0, min(2, digits.length));
+    }
+
+    if (digits.length >= 2) {
+      formatted += ' ';
+    } else {
+      return _ret(formatted);
+    }
+
+    // DDD (2 dígitos)
+    if (digits.length >= 3) {
+      formatted += '(' + digits.substring(2, min(4, digits.length));
+    } else {
+      formatted += '(' + digits.substring(2);
+      return _ret(formatted + ')');
+    }
+
+    if (digits.length >= 4) {
+      formatted += ') ';
+    } else {
+      return _ret(formatted);
+    }
+
+    // Número
+    if (digits.length > 4) {
+      String numero = digits.substring(4);
+      if (numero.length <= 5) {
+        formatted += numero;
       } else {
-        formatted += text;
+        formatted += numero.substring(0, 5) + '-' + numero.substring(5);
       }
     }
 
+    return _ret(formatted);
+  }
+
+  TextEditingValue _ret(String text) {
     return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
     );
   }
 }
 
+/// ============= FORMATADOR DE VALOR =============
 class ValorInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
+      TextEditingValue oldValue, TextEditingValue newValue) {
     String digits = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
     if (digits.isEmpty) digits = '0';
-    double value = double.parse(digits) / 100.0;
 
+    double value = double.parse(digits) / 100.0;
     final formatter = NumberFormat("#,##0.00", "pt_BR");
     String newText = formatter.format(value);
 

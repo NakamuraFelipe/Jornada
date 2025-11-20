@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'gerenciar_pap.dart'; 
 
 class HomePage_Gestor extends StatefulWidget {
+  const HomePage_Gestor({super.key});
+
   @override
   State<HomePage_Gestor> createState() => HomePageGestorState();
 }

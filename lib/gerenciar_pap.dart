@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:teste/home_page_gestor.dart';
 
 class GerenciarPAP extends StatefulWidget {
+  const GerenciarPAP({super.key});
+
   @override
   State<GerenciarPAP> createState() => _GerenciarPAPState();
 }
