@@ -64,6 +64,43 @@ class _LoginPageState extends State<LoginPage> {
             height: MediaQuery.of(context).size.height,
             child: Stack(
               children: [
+                Positioned(
+                  top: 50,
+                  left: 30,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 100,
+                  right: 30,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 200,
+                  left: 150,
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+
                 Container(
                   width: double.infinity,
                   margin: const EdgeInsets.only(top: 230),
@@ -75,6 +112,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
+
                 _body(),
               ],
             ),
@@ -142,7 +180,9 @@ class _LoginPageState extends State<LoginPage> {
             prefixIcon: const Icon(Icons.lock, color: Color(0xFFD32F2F)),
             labelText: 'Senha',
             suffixIcon: IconButton(
-              icon: Icon(passwordText ? Icons.visibility : Icons.visibility_off),
+              icon: Icon(
+                passwordText ? Icons.visibility : Icons.visibility_off,
+              ),
               onPressed: () => setState(() => passwordText = !passwordText),
             ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
@@ -181,7 +221,7 @@ class _LoginPageState extends State<LoginPage> {
                   } else {
                     Navigator.pushReplacementNamed(
                       context,
-                      '/inicio',
+                      '/home_screen',
                       arguments: usuario,
                     );
                   }
@@ -194,14 +234,19 @@ class _LoginPageState extends State<LoginPage> {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFD32F2F),
           padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
         ),
         child: loading
             ? const CircularProgressIndicator(color: Colors.white)
             : const Text(
                 'Login',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
       ),
     );
