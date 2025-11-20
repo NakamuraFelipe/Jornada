@@ -3,11 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:teste/app_widget.dart';
 import 'package:teste/inicio.dart';
 import 'package:teste/meus_leads.dart';
+import 'package:teste/perfil_page.dart';
 
 main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  runApp(appWidget(title: 'Teste'));
+  runApp(appWidget(title: 'PAP Ademicon'));
 }
 
 class HomeScreen extends StatefulWidget {

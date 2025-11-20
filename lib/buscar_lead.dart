@@ -15,7 +15,7 @@ class _BuscarLeadState extends State<BuscarLead> {
   // ==== DADOS ESTÁTICOS (APENAS EXEMPLO) ====
   final List<_SampleLead> _itens = [
     _SampleLead(
-      nome: 'Maria Silva',
+      nomelead: 'Maria Silva',
       categoria: 'Varejo',
       endereco: _SampleAddress(
         pais: 'Brasil',
@@ -25,10 +25,11 @@ class _BuscarLeadState extends State<BuscarLead> {
         numero: '1000',
         complemento: 'Conj. 101',
       ),
-      observacao: 'Cliente interessada em prazo estendido.',
+      nomeconsultor: 'Lucas Ferreira',
+      UltimaVisita: DateTime(2024, 5, 20),
     ),
     _SampleLead(
-      nome: 'Comercial Almeida',
+      nomelead: 'Comercial Almeida',
       categoria: 'Atacado',
       endereco: _SampleAddress(
         pais: 'Brasil',
@@ -37,9 +38,11 @@ class _BuscarLeadState extends State<BuscarLead> {
         rua: 'Rua da Bahia',
         numero: '230',
       ),
+      nomeconsultor: 'Andre Henrique',
+      UltimaVisita: DateTime(2024, 4, 15),
     ),
     _SampleLead(
-      nome: 'João Pereira',
+      nomelead: 'João Pereira',
       endereco: _SampleAddress(
         pais: 'Brasil',
         estado: 'RJ',
@@ -47,7 +50,8 @@ class _BuscarLeadState extends State<BuscarLead> {
         rua: 'Rua das Laranjeiras',
         numero: '45',
       ),
-      observacao: 'Prefere contato por WhatsApp de manhã.',
+      nomeconsultor: 'Mariana Costa',
+      UltimaVisita: DateTime(2024, 3, 10),
     ),
   ];
   // ===========================================
@@ -61,10 +65,10 @@ class _BuscarLeadState extends State<BuscarLead> {
   bool _match(_SampleLead lead, String query) {
     if (query.trim().isEmpty) return true;
     final q = query.toLowerCase().trim();
-    return lead.nome.toLowerCase().contains(q) ||
+    return lead.nomelead.toLowerCase().contains(q) ||
         lead.endereco.resumo().toLowerCase().contains(q) ||
         (lead.categoria ?? '').toLowerCase().contains(q) ||
-        (lead.observacao ?? '').toLowerCase().contains(q);
+        (lead.nomeconsultor ?? '').toLowerCase().contains(q);
   }
 
   void _mostrarDetalhes(_SampleLead lead) {
@@ -82,11 +86,11 @@ class _BuscarLeadState extends State<BuscarLead> {
           children: [
             Row(
               children: [
-                const Icon(Icons.person, color: kPrimary),
+                const Icon(Icons.business, color: kPrimary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    lead.nome,
+                    lead.nomelead,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -119,18 +123,31 @@ class _BuscarLeadState extends State<BuscarLead> {
                 ),
               ],
             ),
-            if ((lead.observacao ?? '').isNotEmpty) ...[
+            if ((lead.nomeconsultor ?? '').isNotEmpty) ...[
               const SizedBox(height: 12),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.notes, color: kPrimary),
+                  const Icon(Icons.person, color: kPrimary),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      lead.observacao!,
+                      lead.nomeconsultor!,
                       style: const TextStyle(height: 1.3),
                     ),
+                  ),
+                ],
+              ),
+            ],
+            if (lead.UltimaVisita != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today, color: kPrimary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Última visita: ${lead.UltimaVisita!.day}/${lead.UltimaVisita!.month}/${lead.UltimaVisita!.year}',
+                    style: const TextStyle(height: 1.3),
                   ),
                 ],
               ),
@@ -216,8 +233,9 @@ class _BuscarLeadState extends State<BuscarLead> {
                               leading: CircleAvatar(
                                 backgroundColor: const Color(0xFFFFEBEE),
                                 child: Text(
-                                  lead.nome.isNotEmpty
-                                      ? lead.nome.characters.first.toUpperCase()
+                                  lead.nomelead.isNotEmpty
+                                      ? lead.nomelead.characters.first
+                                            .toUpperCase()
                                       : '?',
                                   style: const TextStyle(
                                     color: kPrimary,
@@ -229,7 +247,7 @@ class _BuscarLeadState extends State<BuscarLead> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      lead.nome,
+                                      lead.nomelead,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -261,19 +279,20 @@ class _BuscarLeadState extends State<BuscarLead> {
                                       color: Colors.black87,
                                     ),
                                   ),
-                                  if ((lead.observacao ?? '').isNotEmpty) ...[
+                                  if ((lead.nomeconsultor ?? '')
+                                      .isNotEmpty) ...[
                                     const SizedBox(height: 6),
                                     Row(
                                       children: [
                                         const Icon(
-                                          Icons.notes,
+                                          Icons.person,
                                           size: 16,
                                           color: Colors.black54,
                                         ),
                                         const SizedBox(width: 6),
                                         Expanded(
                                           child: Text(
-                                            lead.observacao!,
+                                            lead.nomeconsultor!,
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
@@ -284,8 +303,28 @@ class _BuscarLeadState extends State<BuscarLead> {
                                       ],
                                     ),
                                   ],
+                                  if (lead.UltimaVisita != null) ...[
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.calendar_today,
+                                          size: 16,
+                                          color: Colors.black54,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Última visita: ${lead.UltimaVisita!.day}/${lead.UltimaVisita!.month}/${lead.UltimaVisita!.year}',
+                                          style: const TextStyle(
+                                            color: Colors.black54,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ],
                               ),
+
                               trailing: const Icon(Icons.chevron_right),
                             ),
                           );
@@ -301,16 +340,18 @@ class _BuscarLeadState extends State<BuscarLead> {
 }
 
 class _SampleLead {
-  final String nome;
+  final String nomelead;
+  final String nomeconsultor;
   final String? categoria;
   final _SampleAddress endereco;
-  final String? observacao;
+  final DateTime? UltimaVisita;
 
   _SampleLead({
-    required this.nome,
+    required this.nomelead,
+    required this.nomeconsultor,
     required this.endereco,
     this.categoria,
-    this.observacao,
+    this.UltimaVisita,
   });
 }
 

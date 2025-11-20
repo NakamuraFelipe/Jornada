@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:teste/autocomplete.dart';
+
 // ignore: unused_import
 import 'package:teste/Login_page.dart';
 import 'package:teste/app_controler.dart';
@@ -12,6 +14,7 @@ import 'package:teste/inicio.dart';
 // ignore: unused_import
 import 'package:teste/main.dart';
 import 'package:teste/meus_leads.dart';
+import 'package:teste/perfil_page.dart';
 
 class appWidget extends StatelessWidget {
   final String title;
@@ -32,7 +35,7 @@ class appWidget extends StatelessWidget {
                 ? Brightness.dark
                 : Brightness.light,
           ),
-          home: LoginPage(),
+          home: BuscarLead(),
           routes: {
             '/gestor': (context) => HomePage_Gestor(),
             '/login': (context) => LoginPage(),
