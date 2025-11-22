@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -141,17 +142,25 @@ class _InicioState extends State<Inicio> {
                               children: [
                                 Row(
                                   children: [
-                                    CircleAvatar(
-                                      radius: 30,
-                                      backgroundImage: usuario?.foto != null
-                                          ? MemoryImage(
-                                              base64Decode(usuario!.foto!),
-                                            )
-                                          : const AssetImage(
-                                                  'assets/images/foto_perfil_teste.png',
-                                                )
-                                                as ImageProvider,
+                                    InkWell(
+                                      onTap: () {
+                                        Navigator.of(
+                                          context,
+                                        ).pushNamed('/perfil');
+                                      },
+                                      child: CircleAvatar(
+                                        radius: 30,
+                                        backgroundImage: usuario?.foto != null
+                                            ? MemoryImage(
+                                                base64Decode(usuario!.foto!),
+                                              )
+                                            : const AssetImage(
+                                                    'assets/images/foto_perfil_teste.png',
+                                                  )
+                                                  as ImageProvider,
+                                      ),
                                     ),
+
                                     const SizedBox(width: 12),
                                     Column(
                                       crossAxisAlignment:
@@ -383,6 +392,13 @@ class _WelcomeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final labels = const ['Jan', 'Fev', 'Mar', 'Abr', 'Mai'];
+    final valores = const [10.0, 14.0, 8.0, 20.0, 16.0];
+
+    final maxValor = (valores.reduce((a, b) => a > b ? a : b)) + 5;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -404,36 +420,180 @@ class _WelcomeCard extends StatelessWidget {
         ],
         border: Border.all(color: Colors.white.withOpacity(.16), width: 1),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w800,
-                  ),
+          Row(
+            children: [
+              Icon(
+                Icons.bar_chart_rounded,
+                color: colorScheme.onPrimaryContainer.withOpacity(.9),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Performance por mês de leads fechadas',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.black87.withOpacity(.85),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
+              ),
+              const Spacer(),
+            ],
           ),
-          IconButton(
-            onPressed: onNotifications,
-            icon: const Icon(Icons.notifications),
-            color: Colors.black87,
+          const SizedBox(height: 12),
+
+          SizedBox(
+            height: 120,
+            child: BarChart(
+              BarChartData(
+                maxY: maxValor,
+                minY: 0,
+                gridData: FlGridData(
+                  show: false,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: Colors.white.withOpacity(.12),
+                    strokeWidth: 1,
+                  ),
+                ),
+                barGroups: valores.asMap().entries.map((e) {
+                  final idx = e.key;
+                  final valor = e.value;
+
+                  return BarChartGroupData(
+                    x: idx,
+                    barsSpace: 8,
+                    barRods: [
+                      BarChartRodData(
+                        toY: valor,
+                        width: 16,
+                        borderRadius: BorderRadius.circular(8),
+
+                        gradient: const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Color(0xFFEF5350), Color(0xFFD32F2F)],
+                        ),
+                        backDrawRodData: BackgroundBarChartRodData(
+                          show: true,
+                          toY: maxValor,
+                          color: Colors.white.withOpacity(.10),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+
+                titlesData: FlTitlesData(
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: false,
+                      reservedSize: 40,
+                      getTitlesWidget: (value, meta) {
+                        if (value % 5 != 0) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6.0),
+                          child: Text(
+                            value.toInt().toString(),
+                            style: TextStyle(
+                              color: colorScheme.onPrimaryContainer.withOpacity(
+                                .7,
+                              ),
+                              fontSize: 11,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 32,
+                      getTitlesWidget: (value, meta) {
+                        final index = value.toInt();
+                        if (index >= 0 && index < labels.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6.0),
+                            child: Text(
+                              labels[index],
+                              style: TextStyle(
+                                color: colorScheme.onPrimaryContainer
+                                    .withOpacity(.85),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                ),
+
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  handleBuiltInTouches: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    tooltipPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    tooltipRoundedRadius: 10,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final mes = labels[group.x];
+                      final valor = rod.toY;
+                      return BarTooltipItem(
+                        '$mes\n',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: '${valor.toStringAsFixed(1)}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border(
+                    top: BorderSide.none,
+                    right: BorderSide.none,
+                    left: BorderSide(
+                      color: Colors.white.withOpacity(.16),
+                      width: 1,
+                    ),
+                    bottom: BorderSide(
+                      color: Colors.white.withOpacity(.16),
+                      width: 1,
+                    ),
+                  ),
+                ),
+              ),
+
+              swapAnimationDuration: const Duration(milliseconds: 450),
+              swapAnimationCurve: Curves.easeOutCubic,
+            ),
           ),
         ],
       ),
@@ -441,7 +601,6 @@ class _WelcomeCard extends StatelessWidget {
   }
 }
 
-/// Grid de ações
 class _ActionsGrid extends StatelessWidget {
   final List<ActionItem> items;
   const _ActionsGrid({required this.items});

@@ -39,6 +39,7 @@ dependencies:
   # ✅ HTTP package to make API requests (needed for back-end integration)
   http: ^1.1.0
   shared_preferences: ^2.5.3
+  fl_chart: ^0.69.0
 
 dev_dependencies:
   flutter_test:
@@ -94,4 +95,4 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-  
+
