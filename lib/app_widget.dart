@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:teste/autocomplete.dart';
+import 'package:teste/dash.dart';
 
 // ignore: unused_import
 import 'package:teste/login_page.dart';
@@ -35,7 +36,7 @@ class appWidget extends StatelessWidget {
                 ? Brightness.dark
                 : Brightness.light,
           ),
-          home: BuscarLead(),
+          home: DashPage(),
           routes: {
             '/gestor': (context) => HomePage_Gestor(),
             '/login': (context) => LoginPage(),
@@ -46,6 +47,7 @@ class appWidget extends StatelessWidget {
             '/meus_leads': (context) => MeusLeads(),
             '/buscar_leads': (context) => BuscarLead(),
             '/home_screen': (context) => HomeScreen(),
+            '/perfil': (context) => PerfilPage(),
           },
         );
       },

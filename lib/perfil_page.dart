@@ -9,6 +9,11 @@ class _PerfilPageState extends State<PerfilPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Criar Lead'),
+        backgroundColor: Color(0xFFD32F2F),
+        foregroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -17,12 +22,12 @@ class _PerfilPageState extends State<PerfilPage> {
                 children: [
                   Container(
                     width: double.infinity,
-                    height: 290,
+                    height: 240,
                     decoration: BoxDecoration(color: Color(0xFFD32F2F)),
                     child: Stack(
                       children: [
                         Positioned(
-                          top: -40,
+                          top: 60,
                           left: -40,
                           child: Opacity(
                             opacity: 0.18,
@@ -72,16 +77,14 @@ class _PerfilPageState extends State<PerfilPage> {
                     ),
                   ),
 
-                  // FOTO + NOME + BOTÃO DE CÂMERA
                   Positioned(
                     left: 0,
                     right: 0,
-                    top: 40,
+                    top: -10,
                     bottom: 0,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // FOTO COM ÍCONE
                         Stack(
                           children: [
                             // FOTO
