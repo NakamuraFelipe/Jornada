@@ -37,7 +37,7 @@ class appWidget extends StatelessWidget {
                 ? Brightness.dark
                 : Brightness.light,
           ),
-          home: UsuariosSupervisionados(),
+          home: LoginPage(),
           routes: {
             '/gestor': (context) => HomePage_Gestor(),
             '/login': (context) => LoginPage(),

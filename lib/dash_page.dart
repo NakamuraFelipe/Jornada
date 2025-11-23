@@ -54,73 +54,198 @@ class _DashPageState extends State<DashPage> {
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
-            child: SizedBox(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    DropdownButton<String>(
-                      value: filtroGrafico,
-                      items: ['Linha', 'Barra', 'Pizza']
-                          .map(
-                            (value) => DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (newValue) {
-                        setState(() {
-                          filtroGrafico = newValue!;
-                        });
-                      },
-                    ),
-                    DropdownButton<String>(
-                      value: filtroPeriodo,
-                      items: ['Dia', 'Semana', 'Mes', 'Ano']
-                          .map(
-                            (value) => DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (newValue) {
-                        setState(() {
-                          filtroPeriodo = newValue!;
-                        });
-                      },
-                    ),
-                    DropdownButton<String>(
-                      value: filtroLeadSituacao,
-                      items: ['Todos', 'Em Conexão', 'Aberto', 'Fechado']
-                          .map(
-                            (value) => DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (newValue) {
-                        setState(() {
-                          filtroLeadSituacao = newValue!;
-                        });
-                      },
-                    ),
-                  ],
-                ),
+            child: Container(
+              margin: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFCDD2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                alignment: WrapAlignment.center,
+                children: [
+                  _buildFiltroGrafico(),
+                  _buildFiltroPeriodo(),
+                  _buildFiltroSituacao(),
+                ],
               ),
             ),
           ),
+
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFCDD2),
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: SizedBox(height: 300, child: _buildGrafico()),
+            ),
+          ),
+
+          SliverPadding(
+            padding: const EdgeInsets.all(12),
+            sliver: SliverGrid.count(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.1,
+              children: [
+                _buildInfoCard(
+                  title: 'Total Fechado',
+                  value: '32',
+                  icon: Icons.check_circle,
+                  color: Colors.green,
+                ),
+                _buildInfoCard(
+                  title: 'Leads Abertos',
+                  value: '15',
+                  icon: Icons.email_outlined,
+                  color: Colors.orange,
+                ),
+                _buildInfoCard(
+                  title: 'Em Conexão',
+                  value: '8',
+                  icon: Icons.wifi,
+                  color: Colors.blue,
+                ),
+                _buildInfoCard(
+                  title: 'Total de Leads',
+                  value: '55',
+                  icon: Icons.people,
+                  color: Colors.redAccent,
+                ),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFiltroGrafico() {
+    return _buildDropdownContainer(
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: filtroGrafico,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          items: ['Linha', 'Barra', 'Pizza']
+              .map(
+                (value) => DropdownMenuItem(
+                  value: value,
+                  child: Row(
+                    children: [
+                      Icon(
+                        value == 'Linha'
+                            ? Icons.show_chart
+                            : value == 'Barra'
+                            ? Icons.bar_chart
+                            : Icons.pie_chart,
+                        color: Colors.redAccent,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(value),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: (newValue) => setState(() => filtroGrafico = newValue!),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFiltroPeriodo() {
+    return _buildDropdownContainer(
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: filtroPeriodo,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          items: ['Dia', 'Semana', 'Mes', 'Ano']
+              .map(
+                (value) => DropdownMenuItem(
+                  value: value,
+                  child: Row(
+                    children: [
+                      Icon(
+                        value == 'Dia'
+                            ? Icons.today
+                            : value == 'Semana'
+                            ? Icons.date_range
+                            : value == 'Mes'
+                            ? Icons.calendar_month
+                            : Icons.timeline,
+                        color: Colors.blueAccent,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(value),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: (newValue) => setState(() => filtroPeriodo = newValue!),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFiltroSituacao() {
+    return _buildDropdownContainer(
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: filtroLeadSituacao,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          items: ['Todos', 'Em Conexão', 'Aberto', 'Fechado']
+              .map(
+                (value) => DropdownMenuItem(
+                  value: value,
+                  child: Row(
+                    children: [
+                      Icon(
+                        value == 'Todos'
+                            ? Icons.filter_list
+                            : value == 'Em Conexão'
+                            ? Icons.wifi
+                            : value == 'Aberto'
+                            ? Icons.mark_email_unread
+                            : Icons.check_circle,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(value),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: (newValue) =>
+              setState(() => filtroLeadSituacao = newValue!),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownContainer({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 
@@ -147,7 +272,6 @@ class _DashPageState extends State<DashPage> {
                   },
                 ),
               ),
-              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
             ),
             lineBarsData: [
               LineChartBarData(
@@ -176,31 +300,14 @@ class _DashPageState extends State<DashPage> {
                     width: 16,
                     borderRadius: BorderRadius.circular(8),
                     gradient: const LinearGradient(
+                      colors: [Color(0xFFEF5350), Color(0xFFD32F2F)],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color(0xFFEF5350), Color(0xFFD32F2F)],
                     ),
                   ),
                 ],
               );
             }).toList(),
-            titlesData: FlTitlesData(
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 && value.toInt() < labels.length) {
-                      return Text(
-                        labels[value.toInt()],
-                        style: const TextStyle(fontSize: 12),
-                      );
-                    }
-                    return const Text('');
-                  },
-                ),
-              ),
-              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
-            ),
           ),
         );
 
@@ -249,5 +356,51 @@ class _DashPageState extends State<DashPage> {
       default:
         return [];
     }
+  }
+
+  Widget _buildInfoCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 32, color: color),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
