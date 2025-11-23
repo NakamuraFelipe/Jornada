@@ -182,7 +182,7 @@ class _BuscarLeadState extends State<BuscarLead> {
           foregroundColor: Colors.white,
           icon: const Icon(Icons.add),
           label: const Text('Cadastrar lead'),
-          onPressed: () {},
+          onPressed: () => Navigator.of(context).pushNamed('/leads'),
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
