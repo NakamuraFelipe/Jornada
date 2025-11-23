@@ -7,6 +7,7 @@ import 'package:teste/login_page.dart';
 import 'package:teste/app_controler.dart';
 import 'package:teste/buscar_lead.dart';
 import 'package:teste/criar_leads.dart';
+import 'package:teste/cadastrar_usuario.dart';
 import 'package:teste/gerenciar_pap.dart';
 // ignore: undefined_hidden_name
 import 'package:teste/home_page.dart' hide AppControler;
@@ -37,9 +38,15 @@ class appWidget extends StatelessWidget {
                 ? Brightness.dark
                 : Brightness.light,
           ),
+<<<<<<< Updated upstream
           home: LoginPage(),
+=======
+          home: CreateUser(),
+>>>>>>> Stashed changes
           routes: {
             '/gestor': (context) => HomePage_Gestor(),
+            '/novo_usuario': (context) => CreateUser(),
+            '/home_gestor': (context) => HomeScreen_gestor(),
             '/login': (context) => LoginPage(),
             '/pap': (context) => GerenciarPAP(),
             '/home': (context) => HomePage(),
@@ -50,6 +57,7 @@ class appWidget extends StatelessWidget {
             '/home_screen': (context) => HomeScreen(),
             '/perfil': (context) => PerfilPage(),
             '/dash': (context) => DashPage(),
+            '/usuarios_supervisionados': (context) => UsuariosSupervisionados(),
           },
         );
       },

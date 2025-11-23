@@ -215,7 +215,7 @@ class _LoginPageState extends State<LoginPage> {
                   if (usuario.cargo.toLowerCase() == "gestor") {
                     Navigator.pushReplacementNamed(
                       context,
-                      '/gestor',
+                      '/home_gestor',
                       arguments: usuario,
                     );
                   } else {
