@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:teste/autocomplete.dart';
-import 'package:teste/dash.dart';
+import 'package:teste/dash_page.dart';
 
 // ignore: unused_import
 import 'package:teste/login_page.dart';
@@ -16,6 +16,7 @@ import 'package:teste/inicio.dart';
 import 'package:teste/main.dart';
 import 'package:teste/meus_leads.dart';
 import 'package:teste/perfil_page.dart';
+import 'package:teste/usuarios_supervisionados.dart';
 
 class appWidget extends StatelessWidget {
   final String title;
@@ -36,7 +37,7 @@ class appWidget extends StatelessWidget {
                 ? Brightness.dark
                 : Brightness.light,
           ),
-          home: DashPage(),
+          home: UsuariosSupervisionados(),
           routes: {
             '/gestor': (context) => HomePage_Gestor(),
             '/login': (context) => LoginPage(),
@@ -48,6 +49,7 @@ class appWidget extends StatelessWidget {
             '/buscar_leads': (context) => BuscarLead(),
             '/home_screen': (context) => HomeScreen(),
             '/perfil': (context) => PerfilPage(),
+            '/dash': (context) => DashPage(),
           },
         );
       },
