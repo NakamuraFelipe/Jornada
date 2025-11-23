@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:teste/app_widget.dart';
+import 'package:teste/dash_page.dart';
 import 'package:teste/inicio.dart';
 import 'package:teste/meus_leads.dart';
-import 'package:teste/perfil_page.dart';
 
 main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +21,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _navIndex = 0;
 
-  final List<Widget> _pages = const [Inicio(), MeusLeads()];
+  final List<Widget> _pages = [Inicio(), MeusLeads(), DashPage()];
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
         indicatorColor: cs.primary.withOpacity(.1),
         selectedIndex: _navIndex,
         onDestinationSelected: (i) => setState(() => _navIndex = i),
-        destinations: const [
+        destinations: [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),

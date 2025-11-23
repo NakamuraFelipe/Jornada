@@ -338,13 +338,6 @@ class _MeusLeadsState extends State<MeusLeads> {
           backgroundColor: kPrimary,
           foregroundColor: Colors.white,
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          backgroundColor: kPrimary,
-          foregroundColor: Colors.white,
-          icon: const Icon(Icons.add),
-          label: const Text('Cadastrar lead'),
-          onPressed: () {},
-        ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
