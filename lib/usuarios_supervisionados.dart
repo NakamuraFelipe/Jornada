@@ -18,17 +18,20 @@ class _UsuariosSupervisionadosState extends State<UsuariosSupervisionados> {
       nome: 'Maria Silva',
       email: 'maria@email.com',
       totalLeads: 4,
+      leadsExpirados: 1,
     ),
     _SampleUsuarioSupervisionado(
       nome: 'Luiz Almeida',
       email: 'almeida@email.com',
       telefone: '+55(43)99482-5469',
       totalLeads: 12,
+      leadsExpirados: 3,
     ),
     _SampleUsuarioSupervisionado(
       nome: 'João Pereira',
       telefone: '+55(43)99482-5469',
       totalLeads: 0,
+      leadsExpirados: 2,
     ),
   ];
   // ==========================
@@ -44,7 +47,6 @@ class _UsuariosSupervisionadosState extends State<UsuariosSupervisionados> {
     if (query.trim().isEmpty) return true;
 
     final q = query.toLowerCase().trim();
-
     return u.nome.toLowerCase().contains(q) ||
         (u.email ?? '').toLowerCase().contains(q) ||
         (u.telefone ?? '').toLowerCase().contains(q);
@@ -64,57 +66,85 @@ class _UsuariosSupervisionadosState extends State<UsuariosSupervisionados> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
+            // NOME
+            Text(
+              u.nome,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // EMAIL
+            if ((u.email ?? '').isNotEmpty) ...[
+              const Text(
+                "Email:",
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              Text(u.email!),
+              const SizedBox(height: 12),
+            ],
+
+            // TELEFONE
+            if ((u.telefone ?? '').isNotEmpty) ...[
+              const Text(
+                "Telefone:",
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              Text(u.telefone!),
+              const SizedBox(height: 12),
+            ],
+
+            const Divider(height: 32),
+
+            // LEADS ATIVOS (chip -> texto)
             Row(
               children: [
-                const Icon(Icons.person, color: kPrimary),
+                Chip(
+                  label: Text("${u.totalLeads}"),
+                  backgroundColor: Colors.green.shade50,
+                  labelStyle: const TextStyle(color: Colors.green),
+                  side: const BorderSide(color: Colors.green),
+                ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    u.nome,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                const Text(
+                  "Leads ativos",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Colors.green,
+                    fontSize: 16,
                   ),
                 ),
+              ],
+            ),
 
-                // CHIP COM TOTAL DE LEADS
+            const SizedBox(height: 20),
+
+            // LEADS EXPIRADOS (chip -> texto)
+            Row(
+              children: [
                 Chip(
-                  label: Text("${u.totalLeads} leads"),
-                  backgroundColor: const Color(0xFFFFEBEE),
-                  labelStyle: const TextStyle(color: kPrimary),
-                  side: const BorderSide(color: kPrimary),
+                  label: Text("${u.leadsExpirados}"),
+                  backgroundColor: Colors.red.shade50,
+                  labelStyle: const TextStyle(color: Colors.red),
+                  side: const BorderSide(color: Colors.red),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  "Leads expirados",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Colors.red,
+                    fontSize: 16,
+                  ),
                 ),
               ],
             ),
 
             const SizedBox(height: 16),
-
-            if ((u.email ?? '').isNotEmpty) ...[
-              Row(
-                children: [
-                  const Icon(Icons.email, color: kPrimary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(u.email!),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            if ((u.telefone ?? '').isNotEmpty) ...[
-              Row(
-                children: [
-                  const Icon(Icons.phone, color: kPrimary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(u.telefone!),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-            ],
           ],
         ),
       ),
@@ -144,7 +174,7 @@ class _UsuariosSupervisionadosState extends State<UsuariosSupervisionados> {
           foregroundColor: Colors.white,
           icon: const Icon(Icons.add),
           label: const Text("Cadastrar usuário"),
-          onPressed: () {},
+          onPressed: () => Navigator.of(context).pushNamed('/novo_usuario'),
         ),
 
         body: Padding(
@@ -164,7 +194,6 @@ class _UsuariosSupervisionadosState extends State<UsuariosSupervisionados> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 12),
 
               Expanded(
@@ -216,16 +245,28 @@ class _UsuariosSupervisionadosState extends State<UsuariosSupervisionados> {
                                 ],
                               ),
 
-                              trailing: Chip(
-                                label: Text("${u.totalLeads}"),
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0,),
-                                backgroundColor: const Color(0xFFFFEBEE),
-                                labelStyle: const TextStyle(color: kPrimary),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    side: const BorderSide(color: Color(0xFFE0E0E0)),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // LEADS ATIVOS (VERDE)
+                                  Chip(
+                                    label: Text("${u.totalLeads}"),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+                                    backgroundColor: Colors.green.shade50,
+                                    labelStyle: const TextStyle(color: Colors.green),
+                                    side: const BorderSide(color: Colors.green),
                                   ),
-                                side: const BorderSide(color: kPrimary),
+                                  const SizedBox(width: 6),
+
+                                  // LEADS EXPIRADOS (VERMELHO)
+                                  Chip(
+                                    label: Text("${u.leadsExpirados}"),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+                                    backgroundColor: Colors.red.shade50,
+                                    labelStyle: const TextStyle(color: Colors.red),
+                                    side: const BorderSide(color: Colors.red),
+                                  ),
+                                ],
                               ),
                             ),
                           );
@@ -249,8 +290,8 @@ class _SampleUsuarioSupervisionado {
   final String? telefone;
   final String? email;
 
-  // Quantos leads esse usuário tem
   final int totalLeads;
+  final int leadsExpirados;
 
   _SampleUsuarioSupervisionado({
     required this.nome,
@@ -258,6 +299,7 @@ class _SampleUsuarioSupervisionado {
     this.telefone,
     this.email,
     this.totalLeads = 0,
+    this.leadsExpirados = 0,
   });
 }
 
