@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-//import 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart';
 
 // sua cor padrão
 const kPrimary = Color(0xFFD32F2F);
@@ -27,7 +27,7 @@ class _CreateUserState extends State<CreateUser> {
 
   File? fotoSelecionada;
 
-  /*
+  
   /// Escolher foto (MANEIRA ORIGINAL — mantida exatamente como estava)
   Future<void> _escolherFoto() async {
     final ImagePicker picker = ImagePicker();
@@ -41,7 +41,7 @@ class _CreateUserState extends State<CreateUser> {
       });
     }
   }
-  */
+  
 
   Future<void> _salvarUsuario() async {
     if (!_formKey.currentState!.validate()) return;
@@ -131,7 +131,7 @@ class _CreateUserState extends State<CreateUser> {
               children: [
                 /// FOTO DO USUÁRIO
                 GestureDetector(
-                  //onTap: _escolherFoto,   // ← mantido como estava
+                  onTap: _escolherFoto,   // ← mantido como estava
                   child: CircleAvatar(
                     radius: 55,
                     backgroundColor: Colors.white,

@@ -271,6 +271,14 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
                                   context,
                                 ).pushNamed('/usuarios_supervisionados'),
                               ),
+                              ActionItem(
+                                icon: Icons.person_add_rounded,
+                                label: 'cadastrar Consultores',
+
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed('/novo_usuario'),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 30),

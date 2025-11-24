@@ -39,7 +39,7 @@ class appWidget extends StatelessWidget {
                 ? Brightness.dark
                 : Brightness.light,
           ),
-          home: ExportarLeads(),
+          home: HomeScreen_gestor(),
           routes: {
             '/gestor': (context) => HomePage_Gestor(),
             '/novo_usuario': (context) => CreateUser(),
