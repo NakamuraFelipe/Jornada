@@ -12,7 +12,7 @@ CORS(
     supports_credentials=True,
     origins=[
         "http://localhost:3000",  # se o front estiver rodando localmente
-        "http://192.168.0.22:5000"  # se o front estiver acessando via rede
+        "http://192.168.0.5:5000"  # se o front estiver acessando via rede
     ]
 )
 

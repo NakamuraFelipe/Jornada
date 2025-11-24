@@ -249,7 +249,7 @@ class _InicioState extends State<Inicio> {
                                 icon: Icons.add_circle_rounded,
                                 label: 'Criar Leads',
                                 onTap: () =>
-                                    Navigator.of(context).pushNamed('/leads'),
+                                    Navigator.of(context).pushNamed('/home'),
                               ),
                               ActionItem(
                                 icon: Icons.groups_rounded,
@@ -261,7 +261,14 @@ class _InicioState extends State<Inicio> {
                               ActionItem(
                                 icon: Icons.bookmark_rounded,
                                 label: 'Leads Salvos',
-                                onTap: () => debugPrint('Leads Salvos'),
+                                onTap: () =>
+                                    Navigator.of(context).pushNamed('/home'),
+                              ),
+                              ActionItem(
+                                icon: Icons.import_export_rounded,
+                                label: 'Exportar Dados',
+                                onTap: () =>
+                                    Navigator.of(context).pushNamed('/home'),
                               ),
                             ],
                           ),

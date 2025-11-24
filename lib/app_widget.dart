@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:teste/autocomplete.dart';
 import 'package:teste/dash_page.dart';
+import 'package:teste/exportar_leads.dart';
 
 // ignore: unused_import
 import 'package:teste/login_page.dart';
@@ -38,11 +39,7 @@ class appWidget extends StatelessWidget {
                 ? Brightness.dark
                 : Brightness.light,
           ),
-<<<<<<< Updated upstream
-          home: LoginPage(),
-=======
-          home: CreateUser(),
->>>>>>> Stashed changes
+          home: ExportarLeads(),
           routes: {
             '/gestor': (context) => HomePage_Gestor(),
             '/novo_usuario': (context) => CreateUser(),

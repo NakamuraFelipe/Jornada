@@ -265,7 +265,8 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
                               ),
                               ActionItem(
                                 icon: Icons.group_rounded,
-                                label: 'Consultores Gerenciados',
+                                label: 'Meus Consultores',
+
                                 onTap: () => Navigator.of(
                                   context,
                                 ).pushNamed('/usuarios_supervisionados'),
