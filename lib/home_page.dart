@@ -370,6 +370,22 @@ class _AddressDialogState extends State<AddressDialog> {
                     },
                   ),
                 ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _numeroCtrl,
+                keyboardType: TextInputType.number,
+                decoration: _dec('Número *', Icons.numbers),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Informe o número' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _complementoCtrl,
+                decoration: _dec(
+                  'Complemento (opcional)',
+                  Icons.add_location_alt,
+                ),
+              ),
             ],
           ),
         ),
@@ -498,7 +514,7 @@ class _HomePageState extends State<HomePage> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
 
-      final uri = Uri.parse('http://192.168.0.11:5000/criar_lead');
+      final uri = Uri.parse('http://192.168.0.5:5000/criar_lead');
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
