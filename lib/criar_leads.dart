@@ -30,15 +30,15 @@ class Address {
   });
 
   Map<String, dynamic> toJson() => {
-        'cep': cep,
-        'pais': pais,
-        'estado': estado,
-        'cidade': cidade,
-        'bairro': bairro,
-        'rua': rua,
-        'numero': numero,
-        'complemento': complemento,
-      };
+    'cep': cep,
+    'pais': pais,
+    'estado': estado,
+    'cidade': cidade,
+    'bairro': bairro,
+    'rua': rua,
+    'numero': numero,
+    'complemento': complemento,
+  };
 
   String resumo() {
     return '${rua}, $numero${complemento != null ? ' - $complemento' : ''}, $bairro, $cidade - $estado, $pais${cep != null ? ', CEP: $cep' : ''}';
@@ -67,15 +67,15 @@ class Lead {
   });
 
   Map<String, dynamic> toJson() => {
-      'nome_local': nome_local,
-      'nome_responsavel': responsavel,
-      'telefone': telefone,
-      'endereco': endereco.toJson(),
-      'estado_leads': status,
-      'categoria_venda': categoria,
-      'observacao': observacao,
-      'valor_proposta': valor,
-    };
+    'nome_local': nome_local,
+    'nome_responsavel': responsavel,
+    'telefone': telefone,
+    'endereco': endereco.toJson(),
+    'estado_leads': status,
+    'categoria_venda': categoria,
+    'observacao': observacao,
+    'valor_proposta': valor,
+  };
 }
 
 /// ==================== CONSTANTES ====================
@@ -161,7 +161,11 @@ class _AddressDialogState extends State<AddressDialog> {
               TextFormField(
                 controller: _cepCtrl,
                 keyboardType: TextInputType.number,
-                decoration: _dec('CEP (opcional)', Icons.local_post_office, hint: 'Ex: 12345-678'),
+                decoration: _dec(
+                  'CEP (opcional)',
+                  Icons.local_post_office,
+                  hint: 'Ex: 12345-678',
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -209,7 +213,10 @@ class _AddressDialogState extends State<AddressDialog> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _complementoCtrl,
-                decoration: _dec('Complemento (opcional)', Icons.add_location_alt),
+                decoration: _dec(
+                  'Complemento (opcional)',
+                  Icons.add_location_alt,
+                ),
               ),
             ],
           ),
@@ -312,7 +319,8 @@ class _CreateLeadState extends State<CreateLead> {
     setState(() => _saving = true);
 
     final valorParsed = double.tryParse(
-        _valorCtrl.text.replaceAll('.', '').replaceAll(',', '.'));
+      _valorCtrl.text.replaceAll('.', '').replaceAll(',', '.'),
+    );
     final telefoneFormatado = _formatarTelefoneParaBanco(_telefoneCtrl.text);
 
     final lead = Lead(
@@ -356,12 +364,14 @@ class _CreateLeadState extends State<CreateLead> {
           final data = jsonDecode(resp.body);
           if (data['mensagem'] != null) msg = data['mensagem'];
         } catch (_) {}
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro de conexão: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro de conexão: $e')));
     } finally {
       setState(() => _saving = false);
     }
@@ -401,7 +411,10 @@ class _CreateLeadState extends State<CreateLead> {
                         prefixIcon: const Icon(Icons.business, color: kPrimary),
                         enabledBorder: themeInputBorder,
                         focusedBorder: themeInputBorder.copyWith(
-                          borderSide: const BorderSide(color: kPrimary, width: 2),
+                          borderSide: const BorderSide(
+                            color: kPrimary,
+                            width: 2,
+                          ),
                         ),
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty)
@@ -418,11 +431,15 @@ class _CreateLeadState extends State<CreateLead> {
                         prefixIcon: const Icon(Icons.person, color: kPrimary),
                         enabledBorder: themeInputBorder,
                         focusedBorder: themeInputBorder.copyWith(
-                          borderSide: const BorderSide(color: kPrimary, width: 2),
+                          borderSide: const BorderSide(
+                            color: kPrimary,
+                            width: 2,
+                          ),
                         ),
                       ),
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty) ? 'Informe o responsável' : null,
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Informe o responsável'
+                          : null,
                     ),
                     const SizedBox(height: 16),
 
@@ -440,13 +457,15 @@ class _CreateLeadState extends State<CreateLead> {
                         prefixIcon: const Icon(Icons.phone, color: kPrimary),
                         enabledBorder: themeInputBorder,
                         focusedBorder: themeInputBorder.copyWith(
-                          borderSide: const BorderSide(color: kPrimary, width: 2),
+                          borderSide: const BorderSide(
+                            color: kPrimary,
+                            width: 2,
+                          ),
                         ),
                       ),
-                      validator: (v) =>
-                          (v == null || v.trim().length < 17)
-                              ? 'Informe um telefone válido'
-                              : null,
+                      validator: (v) => (v == null || v.trim().length < 17)
+                          ? 'Informe um telefone válido'
+                          : null,
                     ),
                     const SizedBox(height: 16),
 
@@ -472,8 +491,10 @@ class _CreateLeadState extends State<CreateLead> {
                                 const Spacer(),
                                 TextButton.icon(
                                   onPressed: _abrirDialogEndereco,
-                                  icon: const Icon(Icons.edit_location_alt,
-                                      color: kPrimary),
+                                  icon: const Icon(
+                                    Icons.edit_location_alt,
+                                    color: kPrimary,
+                                  ),
                                   label: Text(
                                     _endereco == null ? 'Escolher' : 'Alterar',
                                     style: const TextStyle(
@@ -503,18 +524,34 @@ class _CreateLeadState extends State<CreateLead> {
                         prefixIcon: const Icon(Icons.flag, color: kPrimary),
                         enabledBorder: themeInputBorder,
                         focusedBorder: themeInputBorder.copyWith(
-                          borderSide: const BorderSide(color: kPrimary, width: 2),
+                          borderSide: const BorderSide(
+                            color: kPrimary,
+                            width: 2,
+                          ),
                         ),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'aberta', child: Text('Aberta')),
-                        DropdownMenuItem(value: 'conexao', child: Text('Conexão')),
-                        DropdownMenuItem(value: 'negociacao', child: Text('Negociação')),
-                        DropdownMenuItem(value: 'fechada', child: Text('Fechada')),
+                        DropdownMenuItem(
+                          value: 'aberta',
+                          child: Text('Aberta'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'conexao',
+                          child: Text('Conexão'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'negociacao',
+                          child: Text('Negociação'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'fechada',
+                          child: Text('Fechada'),
+                        ),
                       ],
                       value: _statusLead,
                       onChanged: (v) => setState(() => _statusLead = v),
-                      validator: (v) => v == null ? 'Selecione um status' : null,
+                      validator: (v) =>
+                          v == null ? 'Selecione um status' : null,
                     ),
                     const SizedBox(height: 16),
 
@@ -528,10 +565,16 @@ class _CreateLeadState extends State<CreateLead> {
                       ],
                       decoration: InputDecoration(
                         labelText: 'Valor da Proposta',
-                        prefixIcon: const Icon(Icons.attach_money, color: kPrimary),
+                        prefixIcon: const Icon(
+                          Icons.attach_money,
+                          color: kPrimary,
+                        ),
                         enabledBorder: themeInputBorder,
                         focusedBorder: themeInputBorder.copyWith(
-                          borderSide: const BorderSide(color: kPrimary, width: 2),
+                          borderSide: const BorderSide(
+                            color: kPrimary,
+                            width: 2,
+                          ),
                         ),
                       ),
                     ),
@@ -544,14 +587,29 @@ class _CreateLeadState extends State<CreateLead> {
                         prefixIcon: const Icon(Icons.category, color: kPrimary),
                         enabledBorder: themeInputBorder,
                         focusedBorder: themeInputBorder.copyWith(
-                          borderSide: const BorderSide(color: kPrimary, width: 2),
+                          borderSide: const BorderSide(
+                            color: kPrimary,
+                            width: 2,
+                          ),
                         ),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'Imovel', child: Text('Imóvel')),
-                        DropdownMenuItem(value: 'Veículo', child: Text('Veículo')),
-                        DropdownMenuItem(value: 'Serviços', child: Text('Serviços')),
-                        DropdownMenuItem(value: 'Bens Móveis', child: Text('Bens Móveis')),
+                        DropdownMenuItem(
+                          value: 'Imovel',
+                          child: Text('Imóvel'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Veículo',
+                          child: Text('Veículo'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Serviços',
+                          child: Text('Serviços'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Bens Móveis',
+                          child: Text('Bens Móveis'),
+                        ),
                       ],
                       value: _categoria,
                       onChanged: (v) => setState(() => _categoria = v),
@@ -568,7 +626,10 @@ class _CreateLeadState extends State<CreateLead> {
                         alignLabelWithHint: true,
                         enabledBorder: themeInputBorder,
                         focusedBorder: themeInputBorder.copyWith(
-                          borderSide: const BorderSide(color: kPrimary, width: 2),
+                          borderSide: const BorderSide(
+                            color: kPrimary,
+                            width: 2,
+                          ),
                         ),
                       ),
                     ),
@@ -586,7 +647,10 @@ class _CreateLeadState extends State<CreateLead> {
                       ),
                       child: _saving
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Salvar', style: TextStyle(fontSize: 16)),
+                          : const Text(
+                              'Salvar',
+                              style: TextStyle(fontSize: 16),
+                            ),
                     ),
                   ],
                 ),
@@ -603,7 +667,9 @@ class _CreateLeadState extends State<CreateLead> {
 class TelefoneInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     // Remove tudo que não for número
     String digits = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
 
@@ -668,7 +734,9 @@ class TelefoneInputFormatter extends TextInputFormatter {
 class ValorInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     String digits = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
     if (digits.isEmpty) digits = '0';
 

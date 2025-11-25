@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-//import 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart';
 
 // sua cor padrão
 const kPrimary = Color(0xFFD32F2F);
@@ -27,7 +27,7 @@ class _CreateUserState extends State<CreateUser> {
 
   File? fotoSelecionada;
 
-  /*
+  
   /// Escolher foto (MANEIRA ORIGINAL — mantida exatamente como estava)
   Future<void> _escolherFoto() async {
     final ImagePicker picker = ImagePicker();
@@ -41,7 +41,7 @@ class _CreateUserState extends State<CreateUser> {
       });
     }
   }
-  */
+  
 
   Future<void> _salvarUsuario() async {
     if (!_formKey.currentState!.validate()) return;
@@ -84,12 +84,9 @@ class _CreateUserState extends State<CreateUser> {
   }
 
   void _erro(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: Colors.red,
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
   }
 
   // Bordas padrão
@@ -134,15 +131,19 @@ class _CreateUserState extends State<CreateUser> {
               children: [
                 /// FOTO DO USUÁRIO
                 GestureDetector(
-                  //onTap: _escolherFoto,   // ← mantido como estava
-
+                  onTap: _escolherFoto,   // ← mantido como estava
                   child: CircleAvatar(
                     radius: 55,
                     backgroundColor: Colors.white,
-                    backgroundImage:
-                        fotoSelecionada != null ? FileImage(fotoSelecionada!) : null,
+                    backgroundImage: fotoSelecionada != null
+                        ? FileImage(fotoSelecionada!)
+                        : null,
                     child: fotoSelecionada == null
-                        ? const Icon(Icons.camera_alt, size: 36, color: kPrimary)
+                        ? const Icon(
+                            Icons.camera_alt,
+                            size: 36,
+                            color: kPrimary,
+                          )
                         : null,
                   ),
                 ),
@@ -170,8 +171,14 @@ class _CreateUserState extends State<CreateUser> {
                   ),
                   items: const [
                     DropdownMenuItem(value: "gestor", child: Text("Gestor")),
-                    DropdownMenuItem(value: "consultor", child: Text("Consultor")),
-                    DropdownMenuItem(value: "supervisor", child: Text("Supervisor")),
+                    DropdownMenuItem(
+                      value: "consultor",
+                      child: Text("Consultor"),
+                    ),
+                    DropdownMenuItem(
+                      value: "supervisor",
+                      child: Text("Supervisor"),
+                    ),
                   ],
                   onChanged: (val) {
                     setState(() => cargoSelecionado = val!);
@@ -203,8 +210,9 @@ class _CreateUserState extends State<CreateUser> {
                   label: "Senha *",
                   icon: Icons.lock,
                   obscure: true,
-                  validator: (v) =>
-                      v!.length < 4 ? "A senha deve ter pelo menos 4 dígitos" : null,
+                  validator: (v) => v!.length < 4
+                      ? "A senha deve ter pelo menos 4 dígitos"
+                      : null,
                 ),
 
                 const SizedBox(height: 28),
@@ -256,8 +264,10 @@ class _CreateUserState extends State<CreateUser> {
         fillColor: Colors.white,
         enabledBorder: getInputBorder(),
         focusedBorder: getFocusedBorder(),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
     );
   }
