@@ -178,3 +178,4 @@ class LeadDAO:
         finally:
             cursor.close()
             conn.close()
+

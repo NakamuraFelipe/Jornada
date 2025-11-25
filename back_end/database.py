@@ -4,7 +4,7 @@ def get_db_connection():
     connection = pymysql.connect(
         host='localhost',
         user='root',
-        password='1234',
+        password='123',
         database='banco_jornada_ademicon',
         cursorclass=pymysql.cursors.DictCursor
     )

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import './models/usuario_logado.dart';
@@ -19,7 +19,7 @@ class _LoginPageState extends State<LoginPage> {
 
   // Função de login
   Future<UsuarioLogado?> loginUser(String email, String password) async {
-    final url = Uri.parse("http://192.168.0.5:5000/login");
+    final url = Uri.parse("http://192.168.0.22:5000/login"); // IP/backend correto
 
     try {
       final response = await http.post(
@@ -28,25 +28,27 @@ class _LoginPageState extends State<LoginPage> {
         body: jsonEncode({'email': email, 'password': password}),
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      final data = jsonDecode(response.body);
 
-        if (data['status'] == 'ok') {
-          // salva token no storage
-          final token = data['token'];
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('token', token);
+      if (response.statusCode == 200 && data['status'] == 'ok') {
+        // Pega token do backend
+        final token = data['token'];
 
-          // insere token no JSON e cria o objeto usuario
-          final usuarioJson = data['usuario'];
-          usuarioJson['token'] = token;
+        // Cria objeto UsuarioLogado incluindo token
+        final usuarioJson = data['usuario'];
+        usuarioJson['token'] = token;
+        final usuario = UsuarioLogado.fromJson(usuarioJson);
 
-          return UsuarioLogado.fromJson(usuarioJson);
-        }
+        // Salva token e usuário no SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('usuario_logado', jsonEncode(usuario.toJson()));
+
+        print("Usuário logado com token: ${usuario.token}");
+        return usuario;
+      } else {
+        print('Erro no login: ${data['mensagem']}');
+        return null;
       }
-
-      print('Erro no login: ${response.body}');
-      return null;
     } catch (e) {
       print('Erro de conexão: $e');
       return null;
@@ -64,6 +66,7 @@ class _LoginPageState extends State<LoginPage> {
             height: MediaQuery.of(context).size.height,
             child: Stack(
               children: [
+                // Bolinhas decorativas
                 Positioned(
                   top: 50,
                   left: 30,
@@ -210,20 +213,12 @@ class _LoginPageState extends State<LoginPage> {
                 setState(() => loading = false);
 
                 if (usuario != null) {
-                  print("cargo: ${usuario.cargo}");
-
                   if (usuario.cargo.toLowerCase() == "gestor") {
-                    Navigator.pushReplacementNamed(
-                      context,
-                      '/home_gestor',
-                      arguments: usuario,
-                    );
+                    Navigator.pushReplacementNamed(context, '/home_gestor',
+                        arguments: usuario);
                   } else {
-                    Navigator.pushReplacementNamed(
-                      context,
-                      '/home_screen',
-                      arguments: usuario,
-                    );
+                    Navigator.pushReplacementNamed(context, '/home_screen',
+                        arguments: usuario);
                   }
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(

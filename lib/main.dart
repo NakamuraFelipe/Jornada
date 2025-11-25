@@ -6,12 +6,13 @@ import 'package:teste/inicio.dart';
 import 'package:teste/meus_leads.dart';
 import 'package:teste/home_page_gestor.dart';
 
-main() {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  runApp(appWidget(title: 'PAP Ademicon'));
+  runApp(AppWidget(title: 'PAP Ademicon'));
 }
 
+/// HOME SCREEN USUÁRIO COMUM
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -22,7 +23,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _navIndex = 0;
 
-  final List<Widget> _pages = [Inicio(), MeusLeads(), DashPage()];
+  // MeusLeads agora não precisa do token
+  final List<Widget> _pages = [Inicio(), const MeusLeads(), DashPage()];
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
         indicatorColor: cs.primary.withOpacity(.1),
         selectedIndex: _navIndex,
         onDestinationSelected: (i) => setState(() => _navIndex = i),
-        destinations: [
+        destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
@@ -57,18 +59,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-//HOME PAGE DO GESTOR
-class HomeScreen_gestor extends StatefulWidget {
-  const HomeScreen_gestor({super.key});
+/// HOME SCREEN DO GESTOR
+class HomeScreenGestor extends StatefulWidget {
+  const HomeScreenGestor({super.key});
 
   @override
-  State<HomeScreen_gestor> createState() => _HomeScreen_gestorState();
+  State<HomeScreenGestor> createState() => _HomeScreenGestorState();
 }
 
-class _HomeScreen_gestorState extends State<HomeScreen_gestor> {
+class _HomeScreenGestorState extends State<HomeScreenGestor> {
   int _navIndex = 0;
 
-  final List<Widget> _pages = [HomePage_Gestor(), MeusLeads(), DashPage()];
+  // MeusLeads também sem token aqui
+  final List<Widget> _pages = [HomePage_Gestor(), const MeusLeads(), DashPage()];
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +84,7 @@ class _HomeScreen_gestorState extends State<HomeScreen_gestor> {
         indicatorColor: cs.primary.withOpacity(.1),
         selectedIndex: _navIndex,
         onDestinationSelected: (i) => setState(() => _navIndex = i),
-        destinations: [
+        destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
