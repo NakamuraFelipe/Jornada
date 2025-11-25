@@ -51,6 +51,7 @@ def login():
                 id_usuario=user['id_usuario'],
                 nome_usuario=user['nome_usuario'],
                 cargo=user['cargo'],
+                matricula=user['matricula'],
                 email=user['email'],
                 telefone=user.get('telefone'),
                 foto=foto_base64
@@ -62,6 +63,8 @@ def login():
                 "email": user['email'],
                 "nome_usuario": user['nome_usuario'],
                 "cargo": user['cargo'],
+                "matricula": user['matricula'],
+                "telefone": user['telefone'],
                 "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=TOKEN_EXP_HOURS)
             }
             token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
