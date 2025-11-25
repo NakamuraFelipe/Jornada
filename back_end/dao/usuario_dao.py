@@ -3,19 +3,19 @@ import pymysql
 from database import get_db_connection
 from models.usuario_logado import UsuarioLogado
 
-class UauarioDAO:
+class UsuarioDAO:
     @staticmethod
     def create_usuario(usuario: Usuario):
         """Cria o usuario no banco"""
-        if not all([usuario.nome_usuario, usuario.cargo, usuario.senha_hash, usuario.id_supervisor]):
-            raise ValueError("Campos obrigatórios do usuário estão vazios.",usuario.nome_usuario, usuario.cargo, usuario.senha_hash, usuario.id_supervisor)
+        if not all([usuario.nome_usuario, usuario.cargo, usuario.senha_hash, usuario.id_gestor]):
+            raise ValueError("Campos obrigatórios do usuário estão vazios.",usuario.nome_usuario, usuario.cargo, usuario.senha_hash, usuario.id_gestor)
 
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
             query = """
                 INSERT INTO usuario (nome_usuario, cargo, email,
-                                   telefone, foto, senha_hash, id_supervisor)
+                                   telefone, foto, senha_hash, id_gestor)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
             values = (
@@ -25,7 +25,7 @@ class UauarioDAO:
                 usuario.telefone,
                 usuario.foto,
                 usuario.senha_hash,
-                usuario.id_supervisor
+                usuario.id_gestor
             )
             print("Valores para insert usuario:", values)
 
@@ -46,16 +46,16 @@ class UauarioDAO:
             conn.close()
 
     @staticmethod
-    def get_usuarios_geridos(id_supervisor):
+    def get_usuarios_geridos(id_gestor):
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         try:
             query = """
                 SELECT *
                 FROM usuario
-                WHERE id_supervisor = %s
+                WHERE id_gestor = %s
             """
-            cursor.execute(query, (id_supervisor,))
+            cursor.execute(query, (id_gestor,))
             results = cursor.fetchall()
             return results
         finally:

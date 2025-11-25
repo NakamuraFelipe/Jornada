@@ -32,13 +32,15 @@ class _LoginPageState extends State<LoginPage> {
         final data = jsonDecode(response.body);
 
         if (data['status'] == 'ok') {
+          //cria o objeto usuario
+          final usuarioJson = data['usuario'];
           // salva token no storage
           final token = data['token'];
           final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('id_usuario', usuarioJson['id_usuario']);
           await prefs.setString('token', token);
 
-          // insere token no JSON e cria o objeto usuario
-          final usuarioJson = data['usuario'];
+          // insere token no JSON
           usuarioJson['token'] = token;
 
           return UsuarioLogado.fromJson(usuarioJson);

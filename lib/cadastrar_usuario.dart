@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // sua cor padrão
 const kPrimary = Color(0xFFD32F2F);
@@ -46,7 +47,15 @@ class _CreateUserState extends State<CreateUser> {
   Future<void> _salvarUsuario() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final uri = Uri.parse("http://192.168.0.5:5000/usuario");
+    final uri = Uri.parse("http://192.168.0.5:5000/cadastrar_usuario");
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+    int? idGestor = prefs.getInt("id_usuario");
+
+    if (idGestor == null) {
+      _erro("Erro: usuário logado não encontrado.");
+      return;
+    }
 
     final body = jsonEncode({
       "nome_usuario": nomeController.text.trim(),
@@ -55,6 +64,7 @@ class _CreateUserState extends State<CreateUser> {
       "telefone": telefoneController.text.trim(),
       "senha": senhaController.text.trim(),
       "foto": fotoBase64,
+      "id_gestor": idGestor,
     });
 
     final response = await http.post(
@@ -176,8 +186,8 @@ class _CreateUserState extends State<CreateUser> {
                       child: Text("Consultor"),
                     ),
                     DropdownMenuItem(
-                      value: "supervisor",
-                      child: Text("Supervisor"),
+                      value: "gestor",
+                      child: Text("Gestor"),
                     ),
                   ],
                   onChanged: (val) {
