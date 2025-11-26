@@ -40,7 +40,7 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
 
       // 1️⃣ Pega os dados do usuário
       final response = await http.get(
-        Uri.parse('http://192.168.0.22:5000/usuario_logado'),
+        Uri.parse('http://192.168.0.11:5000/usuario_logado'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -76,7 +76,7 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
   Future<void> _carregarFotoUsuario(int idUsuario) async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.0.22:5000/usuario/$idUsuario/foto'),
+        Uri.parse('http://192.168.0.11:5000/usuario/$idUsuario/foto'),
       );
 
       if (response.statusCode == 200) {
@@ -265,19 +265,11 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
                               ),
                               ActionItem(
                                 icon: Icons.group_rounded,
-                                label: 'Meus Consultores',
+                                label: 'Meus  Consultores',
 
                                 onTap: () => Navigator.of(
                                   context,
                                 ).pushNamed('/usuarios_supervisionados'),
-                              ),
-                              ActionItem(
-                                icon: Icons.person_add_rounded,
-                                label: 'cadastrar Consultores',
-
-                                onTap: () => Navigator.of(
-                                  context,
-                                ).pushNamed('/novo_usuario'),
                               ),
                             ],
                           ),
