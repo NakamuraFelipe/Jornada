@@ -514,7 +514,7 @@ class _HomePageState extends State<HomePage> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
 
-      final uri = Uri.parse('http://192.168.0.5:5000/criar_lead');
+      final uri = Uri.parse('http://192.168.0.3:5000/criar_lead');
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',

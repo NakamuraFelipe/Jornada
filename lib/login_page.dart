@@ -19,7 +19,9 @@ class _LoginPageState extends State<LoginPage> {
 
   // Função de login
   Future<UsuarioLogado?> loginUser(String email, String password) async {
-    final url = Uri.parse("http://192.168.0.22:5000/login"); // IP/backend correto
+    final url = Uri.parse(
+      "http://192.168.0.3:5000/login",
+    ); // IP/backend correto
 
     try {
       final response = await http.post(
@@ -214,11 +216,17 @@ class _LoginPageState extends State<LoginPage> {
 
                 if (usuario != null) {
                   if (usuario.cargo.toLowerCase() == "gestor") {
-                    Navigator.pushReplacementNamed(context, '/home_gestor',
-                        arguments: usuario);
+                    Navigator.pushReplacementNamed(
+                      context,
+                      '/home_gestor',
+                      arguments: usuario,
+                    );
                   } else {
-                    Navigator.pushReplacementNamed(context, '/home_screen',
-                        arguments: usuario);
+                    Navigator.pushReplacementNamed(
+                      context,
+                      '/home_screen',
+                      arguments: usuario,
+                    );
                   }
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
