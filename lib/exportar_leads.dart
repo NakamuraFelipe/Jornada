@@ -73,7 +73,6 @@ class _ExportarLeadsState extends State<ExportarLeads> {
       appBar: AppBar(
         title: const Text('Exportar Leads'),
         foregroundColor: Colors.white,
-
         backgroundColor: kPrimary,
       ),
       body: Padding(

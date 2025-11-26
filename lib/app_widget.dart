@@ -56,9 +56,7 @@ class _AppWidgetState extends State<AppWidget> {
   Widget build(BuildContext context) {
     if (_carregando) {
       return const MaterialApp(
-        home: Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
       );
     }
 
