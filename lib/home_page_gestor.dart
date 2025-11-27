@@ -40,7 +40,7 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
 
       // 1️⃣ Pega os dados do usuário
       final response = await http.get(
-        Uri.parse('http://192.168.0.11:5000/usuario_logado'),
+        Uri.parse('http://192.168.25.76:5000/usuario_logado'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -76,7 +76,7 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
   Future<void> _carregarFotoUsuario(int idUsuario) async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.0.11:5000/usuario/$idUsuario/foto'),
+        Uri.parse('http://192.168.25.76:5000/usuario/$idUsuario/foto'),
       );
 
       if (response.statusCode == 200) {

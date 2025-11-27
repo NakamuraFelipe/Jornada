@@ -19,9 +19,7 @@ class _LoginPageState extends State<LoginPage> {
 
   // Função de login
   Future<UsuarioLogado?> loginUser(String email, String password) async {
-    final url = Uri.parse(
-      "http://192.168.0.3:5000/login",
-    ); // IP/backend correto
+    final url = Uri.parse("http://192.168.25.76:5000/login");
 
     try {
       final response = await http.post(
@@ -33,7 +31,6 @@ class _LoginPageState extends State<LoginPage> {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['status'] == 'ok') {
-        // Pega token do backend
         final token = data['token'];
 
         // Cria objeto UsuarioLogado incluindo token
@@ -43,9 +40,15 @@ class _LoginPageState extends State<LoginPage> {
 
         // Salva token e usuário no SharedPreferences
         final prefs = await SharedPreferences.getInstance();
+
+        // 🔥 CORREÇÃO PRINCIPAL — SALVAR TOKEN
+        await prefs.setString('token', token);
+
+        // Salva o objeto do usuário
         await prefs.setString('usuario_logado', jsonEncode(usuario.toJson()));
 
-        print("Usuário logado com token: ${usuario.token}");
+        print("TOKEN SALVO: $token");
+
         return usuario;
       } else {
         print('Erro no login: ${data['mensagem']}');
@@ -68,7 +71,6 @@ class _LoginPageState extends State<LoginPage> {
             height: MediaQuery.of(context).size.height,
             child: Stack(
               children: [
-                // Bolinhas decorativas
                 Positioned(
                   top: 50,
                   left: 30,

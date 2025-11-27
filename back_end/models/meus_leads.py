@@ -10,8 +10,9 @@ class MeusLeads:
                  complemento,
                  nome_cidade,
                  uf,
-                 nome_consultor,
-                 ultima_visita,
+                 nome_consultor,       # novo
+                 nome_responsavel,     # novo
+                 ultima_visita,        # novo
                  observacoes,
                  valor_proposta,
                  data_criacao):
@@ -29,7 +30,9 @@ class MeusLeads:
         self.uf = uf
 
         self.nome_consultor = nome_consultor
+        self.nome_responsavel = nome_responsavel
         self.ultima_visita = ultima_visita
+
         self.observacoes = observacoes
         self.valor_proposta = valor_proposta
         self.data_criacao = data_criacao
