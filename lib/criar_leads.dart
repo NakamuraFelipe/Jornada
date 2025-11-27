@@ -338,7 +338,7 @@ class _CreateLeadState extends State<CreateLead> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
 
-      final uri = Uri.parse('http://192.168.0.22:5000/criar_lead');
+      final uri = Uri.parse('http://192.168.25.76:5000/criar_lead');
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',

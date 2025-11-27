@@ -32,7 +32,7 @@ class _PerfilPageState extends State<PerfilPage> {
 
       // 1️⃣ Buscar dados do usuário
       final response = await http.get(
-        Uri.parse('http://192.168.0.22:5000/usuario_logado'),
+        Uri.parse('http://192.168.25.76:5000/usuario_logado'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ class _PerfilPageState extends State<PerfilPage> {
   Future<void> _buscarFoto(int idUser) async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.0.22:5000/usuario/$idUser/foto'),
+        Uri.parse('http://192.168.25.76:5000/usuario/$idUser/foto'),
       );
 
       if (response.statusCode == 200) {

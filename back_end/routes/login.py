@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from database import get_db_connection
 from passlib.hash import argon2
 from models.usuario_logado import UsuarioLogado
@@ -8,9 +8,39 @@ import datetime
 
 login_bp = Blueprint('login_bp', __name__)
 
-# Chave secreta para gerar e validar tokens
 SECRET_KEY = "DeAdMaU5#"
-TOKEN_EXP_HOURS = 6  # duração do token em horas
+TOKEN_EXP_HOURS = 6
+
+
+# =====================================================
+# Função para limpar qualquer rastro de usuário logado
+# =====================================================
+def limpar_usuario_logado():
+    print("\n🧹 Limpando dados de usuário logado anterior...")
+
+    try:
+        # Caso você use flask session
+        try:
+            session.clear()
+        except:
+            pass
+
+        # Se estiver usando objeto global:
+        try:
+            UsuarioLogado.id_usuario = None
+            UsuarioLogado.nome_usuario = None
+            UsuarioLogado.cargo = None
+            UsuarioLogado.email = None
+            UsuarioLogado.telefone = None
+            UsuarioLogado.foto = None
+        except:
+            pass
+
+        print("✔ Dados limpos com sucesso!\n")
+
+    except Exception as e:
+        print(f"⚠ Erro ao limpar dados anteriores: {e}")
+
 
 @login_bp.route('/login', methods=['POST'])
 def login():
@@ -21,8 +51,13 @@ def login():
     if not email or not senha:
         return jsonify({"status": "erro", "mensagem": "Email e senha são obrigatórios"}), 400
 
+    # =====================================================
+    # 🔥 LIMPAR DADOS DO LOGIN ANTERIOR ANTES DE CONTINUAR
+    # =====================================================
+    limpar_usuario_logado()
+
+    connection = get_db_connection()
     try:
-        connection = get_db_connection()
         cursor = connection.cursor()
         cursor.execute("SELECT * FROM usuario WHERE email = %s", (email,))
         user = cursor.fetchone()
@@ -42,7 +77,6 @@ def login():
 
     try:
         if senha_hash and argon2.verify(senha, senha_hash):
-            # Converte a imagem (longblob) para base64 apenas para o retorno
             foto_base64 = None
             if user.get('foto'):
                 foto_base64 = base64.b64encode(user['foto']).decode('utf-8')
@@ -56,7 +90,6 @@ def login():
                 foto=foto_base64
             )
 
-            # Cria token JWT
             payload = {
                 "id_usuario": user['id_usuario'],
                 "email": user['email'],
@@ -64,17 +97,32 @@ def login():
                 "cargo": user['cargo'],
                 "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=TOKEN_EXP_HOURS)
             }
+
             token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+            # =====================================================
+            # 🔍 PRINT NO TERMINAL COM INFO DO USUÁRIO LOGADO
+            # =====================================================
+            print("\n================== 👤 USUÁRIO LOGADO ==================")
+            print(f"ID: {usuario.id_usuario}")
+            print(f"Nome: {usuario.nome_usuario}")
+            print(f"Cargo: {usuario.cargo}")
+            print(f"Email: {usuario.email}")
+            print(f"Telefone: {usuario.telefone}")
+            print(f"Foto base64: {'Sim' if usuario.foto else 'Não'}")
+            print("========================================================\n")
 
             return jsonify({
                 "status": "ok",
                 "token": token,
                 "usuario": usuario.to_dict()
             })
+
     except Exception as e:
         return jsonify({"status": "erro", "mensagem": f"Erro ao verificar senha: {str(e)}"}), 500
 
     return jsonify({"status": "erro", "mensagem": "Email ou senha inválidos"}), 401
+
 
 
 @login_bp.route('/usuario_logado', methods=['GET'])

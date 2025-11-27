@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,6 +31,9 @@ class _InicioState extends State<Inicio> {
   Future<void> _carregarUsuarioLogado() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (kDebugMode) {
+        print("TOKEN SALVO: ${prefs.getString('token')}");
+      }
       final token = prefs.getString('token');
 
       if (token == null) {
@@ -40,7 +44,7 @@ class _InicioState extends State<Inicio> {
 
       // 1️⃣ Pega os dados do usuário
       final response = await http.get(
-        Uri.parse('http://192.168.0.3:5000/usuario_logado'),
+        Uri.parse('http://192.168.25.76:5000/usuario_logado'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -76,7 +80,7 @@ class _InicioState extends State<Inicio> {
   Future<void> _carregarFotoUsuario(int idUsuario) async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.0.3:5000/usuario/$idUsuario/foto'),
+        Uri.parse('http://192.168.25.76:5000/usuario/$idUsuario/foto'),
       );
 
       if (response.statusCode == 200) {
@@ -150,14 +154,9 @@ class _InicioState extends State<Inicio> {
                                       },
                                       child: CircleAvatar(
                                         radius: 30,
-                                        backgroundImage: usuario?.foto != null
-                                            ? MemoryImage(
-                                                base64Decode(usuario!.foto!),
-                                              )
-                                            : const AssetImage(
-                                                    'assets/images/foto_perfil_teste.png',
-                                                  )
-                                                  as ImageProvider,
+                                        backgroundImage: (usuario?.foto != null && usuario!.foto!.isNotEmpty)
+                                            ? MemoryImage(base64Decode(usuario!.foto!))
+                                              : const AssetImage('assets/images/foto_perfil_teste.png') as ImageProvider,
                                       ),
                                     ),
 
