@@ -44,7 +44,7 @@ class _InicioState extends State<Inicio> {
 
       // 1️⃣ Pega os dados do usuário
       final response = await http.get(
-        Uri.parse('http://192.168.25.76:5000/usuario_logado'),
+        Uri.parse('http://192.168.0.3:5000/usuario_logado'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -154,9 +154,16 @@ class _InicioState extends State<Inicio> {
                                       },
                                       child: CircleAvatar(
                                         radius: 30,
-                                        backgroundImage: (usuario?.foto != null && usuario!.foto!.isNotEmpty)
-                                            ? MemoryImage(base64Decode(usuario!.foto!))
-                                              : const AssetImage('assets/images/foto_perfil_teste.png') as ImageProvider,
+                                        backgroundImage:
+                                            (usuario?.foto != null &&
+                                                usuario!.foto!.isNotEmpty)
+                                            ? MemoryImage(
+                                                base64Decode(usuario!.foto!),
+                                              )
+                                            : const AssetImage(
+                                                    'assets/images/foto_perfil_teste.png',
+                                                  )
+                                                  as ImageProvider,
                                       ),
                                     ),
 
@@ -266,8 +273,9 @@ class _InicioState extends State<Inicio> {
                               ActionItem(
                                 icon: Icons.import_export_rounded,
                                 label: 'Exportar Dados',
-                                onTap: () =>
-                                    Navigator.of(context).pushNamed('/home'),
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed('/exportar'),
                               ),
                             ],
                           ),

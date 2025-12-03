@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:teste/autocomplete.dart';
 import 'package:teste/dash_page.dart';
+import 'package:teste/exportar_leads.dart';
 import 'package:teste/login_page.dart';
 import 'package:teste/app_controler.dart';
 import 'package:teste/buscar_lead.dart';
@@ -89,6 +90,7 @@ class _AppWidgetState extends State<AppWidget> {
             '/home_screen': (context) => const HomeScreen(),
             '/perfil': (context) => PerfilPage(),
             '/dash': (context) => DashPage(),
+            '/exportar': (context) => ExportarLeads(),
             '/usuarios_supervisionados': (context) => UsuariosSupervisionados(),
           },
         );

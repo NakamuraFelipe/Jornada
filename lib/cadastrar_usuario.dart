@@ -27,7 +27,6 @@ class _CreateUserState extends State<CreateUser> {
 
   File? fotoSelecionada;
 
-  
   /// Escolher foto (MANEIRA ORIGINAL — mantida exatamente como estava)
   Future<void> _escolherFoto() async {
     final ImagePicker picker = ImagePicker();
@@ -41,12 +40,11 @@ class _CreateUserState extends State<CreateUser> {
       });
     }
   }
-  
 
   Future<void> _salvarUsuario() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final uri = Uri.parse("http://192.168.25.76:5000/usuario");
+    final uri = Uri.parse("http://192.168.0.3:5000/usuario");
 
     final body = jsonEncode({
       "nome_usuario": nomeController.text.trim(),
@@ -131,7 +129,7 @@ class _CreateUserState extends State<CreateUser> {
               children: [
                 /// FOTO DO USUÁRIO
                 GestureDetector(
-                  onTap: _escolherFoto,   // ← mantido como estava
+                  onTap: _escolherFoto, // ← mantido como estava
                   child: CircleAvatar(
                     radius: 55,
                     backgroundColor: Colors.white,

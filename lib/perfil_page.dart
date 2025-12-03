@@ -32,7 +32,7 @@ class _PerfilPageState extends State<PerfilPage> {
 
       // 1️⃣ Buscar dados do usuário
       final response = await http.get(
-        Uri.parse('http://192.168.25.76:5000/usuario_logado'),
+        Uri.parse('http://192.168.0.3:5000/usuario_logado'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -104,12 +104,7 @@ class _PerfilPageState extends State<PerfilPage> {
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildHeader(),
-            _buildInfo(),
-          ],
-        ),
+        child: Column(children: [_buildHeader(), _buildInfo()]),
       ),
     );
   }
@@ -139,7 +134,7 @@ class _PerfilPageState extends State<PerfilPage> {
                       backgroundImage: usuario!.foto != null
                           ? MemoryImage(base64Decode(usuario!.foto!))
                           : AssetImage('assets/images/foto_perfil_teste.png')
-                              as ImageProvider,
+                                as ImageProvider,
                     ),
                     Positioned(
                       bottom: 10,
@@ -154,10 +149,7 @@ class _PerfilPageState extends State<PerfilPage> {
                             color: Colors.white,
                             shape: BoxShape.circle,
                             boxShadow: [
-                              BoxShadow(
-                                color: Colors.black26,
-                                blurRadius: 6,
-                              ),
+                              BoxShadow(color: Colors.black26, blurRadius: 6),
                             ],
                           ),
                           child: Icon(
@@ -200,7 +192,11 @@ class _PerfilPageState extends State<PerfilPage> {
         _divider(),
         _infoItem(Icons.badge, "Cargo", usuario?.cargo ?? "—"),
         _divider(),
-        _infoItem(Icons.confirmation_number, "Matrícula", usuario?.matricula ?? "—"),
+        _infoItem(
+          Icons.confirmation_number,
+          "Matrícula",
+          usuario?.matricula ?? "—",
+        ),
         _divider(),
         _buttons(),
       ],
@@ -254,7 +250,11 @@ class _PerfilPageState extends State<PerfilPage> {
             child: const Center(
               child: Text(
                 'Trocar Telefone',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
@@ -275,7 +275,11 @@ class _PerfilPageState extends State<PerfilPage> {
             child: const Center(
               child: Text(
                 'Trocar Senha',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
