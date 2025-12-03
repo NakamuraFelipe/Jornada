@@ -1,11 +1,8 @@
 import pymysql
+from models.all_leads import AllLeads
 from database import get_db_connection
-from models.meus_leads import MeusLeads
 
-class MeusLeadsDAO:
-
-    @staticmethod
-    def buscar_leads(query, id_usuario):
+def buscar_all_leads(query):
         conn = get_db_connection()
         cursor = conn.cursor(pymysql.cursors.DictCursor)
 
@@ -68,8 +65,7 @@ class MeusLeadsDAO:
         INNER JOIN cidade c ON c.id_cidade = b.id_cidade
         INNER JOIN estado e ON e.id_estado = c.id_estado
         LEFT JOIN usuario u ON u.id_usuario = l.id_usuario   -- traz nome do consultor (opcional)
-        WHERE l.id_usuario = %s
-          AND (
+        WHERE (
                 l.nome_local LIKE %s
                 OR l.categoria_venda LIKE %s
                 OR l.estado_leads LIKE %s
@@ -82,7 +78,6 @@ class MeusLeadsDAO:
         id_localizacao_check = query if query.isdigit() else ""
 
         cursor.execute(sql, (
-            id_usuario,
             like, like, like,
             id_localizacao_check, id_localizacao_filter
         ))
@@ -94,7 +89,7 @@ class MeusLeadsDAO:
         # ----------------------------------------------
         leads = []
         for row in rows:
-            lead_obj = MeusLeads(
+            lead_obj = AllLeads(
                 id_lead=row.get("id_leads"),
                 nome_local=row.get("nome_local"),
                 categoria_venda=row.get("categoria_venda"),

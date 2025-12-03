@@ -199,30 +199,9 @@ class _AddressDialogState extends State<AddressDialog> {
     // componentes do endereço
     final comps = dados['address_components'];
 
-    String pais = '';
-    String estado = '';
-    String cidade = '';
-
-    for (var c in comps) {
-      List types = c['types'];
-
-      if (types.contains('country')) {
-        pais = c['long_name'];
-      }
-      if (types.contains('administrative_area_level_1')) {
-        estado = c['long_name'];
-      }
-      if (types.contains('locality')) {
-        cidade = c['long_name'];
-      }
-    }
-
-    // preenche os campos automaticamente
-    setState(() {
-      _paisCtrl.text = pais;
-      _estadoCtrl.text = estado;
-      _cidadeCtrl.text = cidade;
-    });
+    String pais1 = '';
+    String estado1 = '';
+    String cidade1 = '';
   }
 
   Future<void> buscarRuas(String input) async {
@@ -265,13 +244,27 @@ class _AddressDialogState extends State<AddressDialog> {
 
     final dados = json.decode(resp.body)['result'];
     final comps = dados['address_components'];
+    for (var c in comps) {
+      List types = c['types'];
+    }
 
     String bairro = '';
     String rua = '';
+    String pais = '';
+    String estado = '';
+    String cidade = '';
 
     for (var c in comps) {
       List types = c['types'];
-
+      if (types.contains('country')) {
+        pais = c['long_name'];
+      }
+      if (types.contains('administrative_area_level_1')) {
+        estado = c['long_name'];
+      }
+      if (types.contains('administrative_area_level_2')) {
+        cidade = c['long_name']; // município
+      }
       if (types.contains('sublocality') ||
           types.contains('sublocality_level_1')) {
         bairro = c['long_name'];
@@ -282,6 +275,9 @@ class _AddressDialogState extends State<AddressDialog> {
     }
 
     setState(() {
+      _paisCtrl.text = pais;
+      _estadoCtrl.text = estado;
+      _cidadeCtrl.text = cidade;
       _bairroCtrl.text = bairro;
       _ruaCtrl.text = rua;
     });
@@ -514,7 +510,7 @@ class _HomePageState extends State<HomePage> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
 
-      final uri = Uri.parse('http://192.168.25.76:5000/criar_lead');
+      final uri = Uri.parse('http://192.168.0.3:5000/criar_lead');
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
