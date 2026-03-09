@@ -2,10 +2,10 @@ import pymysql
 
 def get_db_connection():
     connection = pymysql.connect(
-        host='localhost',
-        user='root',
-        password='1234',
-        database='banco_jornada_ademicon',
+        host='sql10.freesqldatabase.com',
+        user='sql10819053',
+        password='v9WkdTVDR2',
+        database='sql10819053',
         cursorclass=pymysql.cursors.DictCursor
     )
     return connection
