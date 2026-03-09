@@ -44,7 +44,7 @@ class _CreateUserState extends State<CreateUser> {
   Future<void> _salvarUsuario() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final uri = Uri.parse("http://192.168.0.3:5000/usuario");
+    final uri = Uri.parse("https://jornadaback.onrender.com/usuario");
 
     final body = jsonEncode({
       "nome_usuario": nomeController.text.trim(),
