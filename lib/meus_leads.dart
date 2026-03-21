@@ -32,7 +32,7 @@ class _MeusLeadsState extends State<MeusLeads> {
   bool _primeiraVez = true;
 
   Timer? _debounce;
-  static const String baseUrl = "https://jornadaback.onrender.com";
+  static const String baseUrl = "https://jornadabackend-hr3v.onrender.com";
 
   @override
   void initState() {

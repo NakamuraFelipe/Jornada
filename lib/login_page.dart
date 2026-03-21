@@ -19,7 +19,7 @@ class _LoginPageState extends State<LoginPage> {
 
   // Função de login
   Future<UsuarioLogado?> loginUser(String email, String password) async {
-    final url = Uri.parse("https://jornadaback.onrender.com//login");
+    final url = Uri.parse("https://jornadabackend-hr3v.onrender.com//login");
 
     try {
       final response = await http.post(

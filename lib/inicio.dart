@@ -44,7 +44,7 @@ class _InicioState extends State<Inicio> {
 
       // 1️⃣ Pega os dados do usuário
       final response = await http.get(
-        Uri.parse('https://jornadaback.onrender.com/usuario_logado'),
+        Uri.parse('https://jornadabackend-hr3v.onrender.com/usuario_logado'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -80,7 +80,7 @@ class _InicioState extends State<Inicio> {
   Future<void> _carregarFotoUsuario(int idUsuario) async {
     try {
       final response = await http.get(
-        Uri.parse('https://jornadaback.onrender.com/usuario/$idUsuario/foto'),
+        Uri.parse('https://jornadabackend-hr3v.onrender.com/usuario/$idUsuario/foto'),
       );
 
       if (response.statusCode == 200) {
