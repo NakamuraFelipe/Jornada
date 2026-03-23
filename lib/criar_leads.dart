@@ -338,7 +338,7 @@ class _CreateLeadState extends State<CreateLead> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
 
-      final uri = Uri.parse('https://jornadaback.onrender.com/criar_lead');
+      final uri = Uri.parse('https://jornadabackend-hr3v.onrender.com/criar_lead');
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',

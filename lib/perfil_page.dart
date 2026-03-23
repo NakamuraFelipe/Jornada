@@ -32,7 +32,7 @@ class _PerfilPageState extends State<PerfilPage> {
 
       // 1️⃣ Buscar dados do usuário
       final response = await http.get(
-        Uri.parse('https://jornadaback.onrender.com/usuario_logado'),
+        Uri.parse('https://jornadabackend-hr3v.onrender.com/usuario_logado'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ class _PerfilPageState extends State<PerfilPage> {
   Future<void> _buscarFoto(int idUser) async {
     try {
       final response = await http.get(
-        Uri.parse('https://jornadaback.onrender.com/usuario/$idUser/foto'),
+        Uri.parse('https://jornadabackend-hr3v.onrender.com/usuario/$idUser/foto'),
       );
 
       if (response.statusCode == 200) {

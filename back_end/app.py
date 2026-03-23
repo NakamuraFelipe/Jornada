@@ -1,39 +1,45 @@
-from flask import Flask
-from flask_cors import CORS # type: ignore
-
-from routes.login import login_bp
-from routes.lead_routes import lead_bp
-from routes.meus_leads import meus_leads_bp
-from routes.all_leads import all_leads_bp
-
-
+from flask import Flask, jsonify
+from database import get_connection, test_connection
 
 app = Flask(__name__)
-app.secret_key = "DeAdMaU5#"  # Necessário para usar session
 
-# 🔹 Configure corretamente o CORS
-CORS(
-    app,
-    supports_credentials=True,
-    origins=[
-        "http://localhost:3000",  # se o front estiver rodando localmente
-        "http://192.168.0.3:5000"  # se o front estiver acessando via rede
-    ]
-)
+@app.route('/')
+def home():
+    """Rota principal"""
+    return jsonify({
+        "api": "Jornada Ademicon",
+        "status": "online",
+        "endpoints": ["/teste", "/health"]
+    })
 
-# 🔹 Registrar o blueprint de login
-app.register_blueprint(login_bp)
+@app.route('/teste')
+def teste_conexao():
+    """Testa conexão com banco"""
+    sucesso, mensagem = test_connection()
+    
+    if sucesso:
+        return jsonify({
+            "status": "sucesso",
+            "mensagem": mensagem
+        })
+    else:
+        return jsonify({
+            "status": "erro",
+            "mensagem": mensagem
+        }), 500
 
-# 🔹 Registrar o blueprint de lead
-app.register_blueprint(lead_bp)
-
-# 🔹 Registrar o blueprint de meus lead
-app.register_blueprint(meus_leads_bp)  
-
-app.register_blueprint(all_leads_bp)
-1
-
+@app.route('/health')
+def health():
+    """Verifica saúde da aplicação"""
+    sucesso, _ = test_connection()
+    
+    return jsonify({
+        "app": "running",
+        "database": "connected" if sucesso else "disconnected"
+    })
 
 if __name__ == '__main__':
-    # 🔹 Host 0.0.0.0 permite acessar de outros dispositivos na mesma rede
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    print("🚀 Iniciando API...")
+    print("📍 http://localhost:5000")
+    print("🧪 Teste: http://localhost:5000/teste")
+    app.run(debug=True)
