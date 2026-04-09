@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'service/dashboard_service.dart';  // Ajuste o path conforme sua estrutura
-import 'models/dashboard_models.dart';    // Ajuste o path conforme sua estrutura
+import 'service/dashboard_service.dart';
+import 'models/dashboard_models.dart';
 
 class DashPage extends StatefulWidget {
   @override
@@ -9,12 +9,9 @@ class DashPage extends StatefulWidget {
 }
 
 class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin {
-  // Filtros existentes
   String filtroGrafico = 'Linha';
   String filtroPeriodo = 'Mes';
   String filtroLeadSituacao = 'Todos';
-  
-  // NOVOS FILTROS
   String filtroEstado = 'Todos';
   String filtroCidade = 'Todas';
   String filtroBairro = 'Todos';
@@ -22,8 +19,7 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
   RangeValues filtroValor = const RangeValues(0, 100000);
   String filtroTempoExistencia = 'Todos';
   String filtroRiscoChurn = 'Todos';
-  
-  // Dados da API
+
   Map<String, dynamic> metricas = {};
   List<double> dadosGrafico = [];
   List<String> labelsGrafico = [];
@@ -32,26 +28,23 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
   List<Map<String, dynamic>> consultoresTop = [];
   List<Alerta> alertas = [];
   Map<String, dynamic> meta = {};
-  
-  // Opções para filtros
+
   List<String> estados = ['Todos'];
   List<dynamic> cidades = [];
   List<dynamic> bairros = [];
   List<String> categorias = ['Todas'];
-  
-  // Estados de loading
+
   bool isLoadingMetricas = true;
   bool isLoadingGrafico = true;
   bool isLoadingBairros = true;
   bool isLoadingConsultores = true;
   bool isLoadingAlertas = true;
   bool isLoadingFiltros = true;
-  
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
-  // ID do usuário logado (você deve pegar do seu sistema de autenticação)
-  int? idUsuarioLogado = 8; // Exemplo - ajuste conforme seu sistema
+  int? idUsuarioLogado = 8;
 
   @override
   void initState() {
@@ -64,7 +57,6 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
       parent: _animationController,
       curve: Curves.easeInOut,
     );
-    
     _carregarTodosDados();
     _carregarOpcoesFiltros();
   }
@@ -77,7 +69,6 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
       _carregarTopConsultores(),
       _carregarAlertas(),
     ]);
-    
     _animationController.forward();
   }
 
@@ -95,7 +86,6 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
       );
     } catch (e) {
       print('Erro ao carregar métricas: $e');
-      // Fallback para dados mock em caso de erro
       metricas = {
         'fechado': 2590,
         'abertos': 2723,
@@ -128,7 +118,6 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
       labelsGrafico = resultado['labels'];
     } catch (e) {
       print('Erro ao carregar gráfico: $e');
-      // Fallback para dados mock
       _carregarDadosMockGrafico();
     } finally {
       setState(() => isLoadingGrafico = false);
@@ -149,7 +138,7 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
         labelsGrafico = ['2021', '2022', '2023', '2024', '2025'];
         dadosGrafico = [3850, 4120, 4580, 5120, 5890];
         break;
-      default: // Mes
+      default:
         labelsGrafico = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
         dadosGrafico = [320, 345, 368, 392, 415, 438, 452, 478, 495, 512, 538, 560];
     }
@@ -167,7 +156,6 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
       conversaoPorBairro = resultado['conversao_por_bairro'];
     } catch (e) {
       print('Erro ao carregar leads por bairro: $e');
-      // Fallback para dados mock
       leadsPorBairro = {
         'Centro': 45,
         'Jardins': 38,
@@ -193,7 +181,6 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
       consultoresTop = await DashboardService.getTopConsultores(limit: 5);
     } catch (e) {
       print('Erro ao carregar top consultores: $e');
-      // Fallback para dados mock
       consultoresTop = [
         {'nome': 'João Silva', 'visitas': 45, 'fechados': 12, 'valor': 45000, 'taxa_conversao': 26.7},
         {'nome': 'Maria Santos', 'visitas': 38, 'fechados': 10, 'valor': 38000, 'taxa_conversao': 26.3},
@@ -213,10 +200,10 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
       alertas = (resultado['alertas'] as List)
           .map((a) => Alerta.fromJson(a))
           .toList();
-      meta = resultado['meta'];
+      meta = resultado['meta'] ?? {};
     } catch (e) {
       print('Erro ao carregar alertas: $e');
-      // Fallback para dados mock
+      // ✅ Fallback garante que meta nunca fica com valores null
       meta = {
         'atual': 320000.0,
         'meta': 500000.0,
@@ -238,7 +225,6 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
       categorias = List<String>.from(resultado['categorias']);
     } catch (e) {
       print('Erro ao carregar opções de filtros: $e');
-      // Fallback para dados mock
       estados = ['Todos', 'SP', 'RJ', 'MG'];
       categorias = ['Todas', 'imovel', 'veiculo', 'servico', 'bens_moveis'];
     } finally {
@@ -248,23 +234,19 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
 
   List<String> getCidadesPorEstado() {
     if (filtroEstado == 'Todos') return ['Todas'];
-    
     final cidadesDoEstado = cidades
         .where((c) => c['nome_estado'] == filtroEstado)
         .map((c) => c['nome_cidade'] as String)
         .toList();
-    
     return ['Todas', ...cidadesDoEstado];
   }
 
   List<String> getBairrosPorCidade() {
     if (filtroCidade == 'Todas') return ['Todos'];
-    
     final bairrosDaCidade = bairros
         .where((b) => b['nome_cidade'] == filtroCidade)
         .map((b) => b['nome_bairro'] as String)
         .toList();
-    
     return ['Todos', ...bairrosDaCidade];
   }
 
@@ -274,9 +256,7 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
     super.dispose();
   }
 
-  Map<String, dynamic> calcularMetricas() {
-    return metricas;
-  }
+  Map<String, dynamic> calcularMetricas() => metricas;
 
   void _abrirFiltros() {
     showModalBottomSheet(
@@ -312,26 +292,16 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
                   const SizedBox(height: 20),
                   const Text(
                     'Filtros Avançados',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 20),
-                  
                   Expanded(
                     child: SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // LOCALIZAÇÃO
-                          const Text(
-                            '📍 LOCALIZAÇÃO',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          const Text('📍 LOCALIZAÇÃO',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 8),
                           _buildFiltroDropdown(
                             value: filtroEstado,
@@ -362,51 +332,34 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
                             value: filtroBairro,
                             items: getBairrosPorCidade(),
                             label: 'Bairro',
-                            onChanged: (value) => setModalState(() => filtroBairro = value),
+                            onChanged: (value) =>
+                                setModalState(() => filtroBairro = value),
                           ),
-                          
                           const SizedBox(height: 16),
                           const Divider(),
-                          
-                          // TIPO DE GRÁFICO
-                          const Text(
-                            '📊 TIPO DE GRÁFICO',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          const Text('📊 TIPO DE GRÁFICO',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 8),
                           _buildFiltroBottomSheet(
                             value: filtroGrafico,
                             items: const ['Linha', 'Barra'],
-                            onChanged: (value) {
-                              setModalState(() => filtroGrafico = value);
-                            },
+                            onChanged: (value) =>
+                                setModalState(() => filtroGrafico = value),
                             icons: {
                               'Linha': Icons.show_chart,
                               'Barra': Icons.bar_chart,
                             },
                           ),
-                          
                           const SizedBox(height: 16),
                           const Divider(),
-                          
-                          // PERÍODO
-                          const Text(
-                            '📅 PERÍODO',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          const Text('📅 PERÍODO',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 8),
                           _buildFiltroBottomSheet(
                             value: filtroPeriodo,
                             items: const ['Dia', 'Semana', 'Mes', 'Ano'],
-                            onChanged: (value) {
-                              setModalState(() => filtroPeriodo = value);
-                            },
+                            onChanged: (value) =>
+                                setModalState(() => filtroPeriodo = value),
                             icons: {
                               'Dia': Icons.today,
                               'Semana': Icons.date_range,
@@ -414,54 +367,32 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
                               'Ano': Icons.timeline,
                             },
                           ),
-                          
                           const SizedBox(height: 16),
                           const Divider(),
-                          
-                          // SITUAÇÃO DO LEAD
-                          const Text(
-                            '🏷️ SITUAÇÃO DO LEAD',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          const Text('🏷️ SITUAÇÃO DO LEAD',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 8),
                           _buildFiltroChip(
                             items: const ['Todos', 'aberta', 'conexao', 'negociacao', 'fechada'],
                             selectedValue: filtroLeadSituacao,
-                            onChanged: (value) => setModalState(() => filtroLeadSituacao = value),
+                            onChanged: (value) =>
+                                setModalState(() => filtroLeadSituacao = value),
                           ),
-                          
                           const SizedBox(height: 16),
                           const Divider(),
-                          
-                          // CATEGORIA
-                          const Text(
-                            '🏷️ CATEGORIA',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          const Text('🏷️ CATEGORIA',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 8),
                           _buildFiltroChip(
                             items: categorias,
                             selectedValue: filtroCategoria,
-                            onChanged: (value) => setModalState(() => filtroCategoria = value),
+                            onChanged: (value) =>
+                                setModalState(() => filtroCategoria = value),
                           ),
-                          
                           const SizedBox(height: 16),
                           const Divider(),
-                          
-                          // VALOR DA PROPOSTA
-                          const Text(
-                            '💰 VALOR DA PROPOSTA',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          const Text('💰 VALOR DA PROPOSTA',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 8),
                           RangeSlider(
                             values: filtroValor,
@@ -472,16 +403,14 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
                               'R\$ ${filtroValor.start.toStringAsFixed(0)}',
                               'R\$ ${filtroValor.end.toStringAsFixed(0)}',
                             ),
-                            onChanged: (values) => setModalState(() => filtroValor = values),
+                            onChanged: (values) =>
+                                setModalState(() => filtroValor = values),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  
                   const SizedBox(height: 16),
-                  
-                  // Botões de ação
                   Row(
                     children: [
                       Expanded(
@@ -501,8 +430,7 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                                borderRadius: BorderRadius.circular(12)),
                           ),
                           child: const Text('Limpar Filtros'),
                         ),
@@ -522,8 +450,7 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                                borderRadius: BorderRadius.circular(12)),
                           ),
                           child: const Text('Aplicar Filtros'),
                         ),
@@ -557,114 +484,108 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
         isExpanded: true,
         underline: const SizedBox(),
         items: items.map((item) {
-          return DropdownMenuItem(
-            value: item,
-            child: Text(item),
-          );
+          return DropdownMenuItem(value: item, child: Text(item));
         }).toList(),
         onChanged: (value) => onChanged(value!),
       ),
     );
   }
 
-Widget _buildFiltroChip({
-  required List<String> items,
-  required String selectedValue,
-  required Function(String) onChanged,
-  Map<String, Color>? colors,
-}) {
-  return Wrap(
-    spacing: 8,
-    children: items.map((item) {
-      final isSelected = item == selectedValue;
-      // Corrigindo o problema de null safety
-      Color chipColor;
-      if (colors != null && colors.containsKey(item)) {
-        chipColor = colors[item]!; // Usando ! porque temos certeza que não é null
-      } else {
-        chipColor = const Color(0xFFE53935);
-      }
-      
-      return FilterChip(
-        label: Text(item),
-        selected: isSelected,
-        onSelected: (_) => onChanged(item),
-        backgroundColor: Colors.grey[100],
-        selectedColor: chipColor.withOpacity(0.2), // Agora chipColor não é null
-        checkmarkColor: chipColor,
-        labelStyle: TextStyle(
-          color: isSelected ? chipColor : Colors.grey[800],
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-        ),
-      );
-    }).toList(),
-  );
-}
-
-Widget _buildFiltroBottomSheet({
-  required String value,
-  required List<String> items,
-  required Function(String) onChanged,
-  required Map<String, IconData> icons,
-  Map<String, Color>? colors,
-}) {
-  return Container(
-    decoration: BoxDecoration(
-      color: Colors.grey[50],
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey.shade200),
-    ),
-    child: Column(
+  Widget _buildFiltroChip({
+    required List<String> items,
+    required String selectedValue,
+    required Function(String) onChanged,
+    Map<String, Color>? colors,
+  }) {
+    return Wrap(
+      spacing: 8,
       children: items.map((item) {
-        final isSelected = value == item;
-        // Corrigindo null safety
-        Color itemColor;
+        final isSelected = item == selectedValue;
+        Color chipColor;
         if (colors != null && colors.containsKey(item)) {
-          itemColor = colors[item]!;
+          chipColor = colors[item]!;
         } else {
-          itemColor = const Color(0xFFE53935);
+          chipColor = const Color(0xFFE53935);
         }
-        
-        return InkWell(
-          onTap: () => onChanged(item),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isSelected ? itemColor.withOpacity(0.1) : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  icons[item],
-                  size: 20,
-                  color: isSelected ? itemColor : Colors.grey[600],
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    item,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: isSelected ? itemColor : Colors.grey[800],
-                    ),
-                  ),
-                ),
-                if (isSelected)
-                  Icon(
-                    Icons.check_circle,
-                    size: 18,
-                    color: itemColor,
-                  ),
-              ],
-            ),
+        return FilterChip(
+          label: Text(item),
+          selected: isSelected,
+          onSelected: (_) => onChanged(item),
+          backgroundColor: Colors.grey[100],
+          selectedColor: chipColor.withOpacity(0.2),
+          checkmarkColor: chipColor,
+          labelStyle: TextStyle(
+            color: isSelected ? chipColor : Colors.grey[800],
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           ),
         );
       }).toList(),
-    ),
-  );
-}
+    );
+  }
+
+  Widget _buildFiltroBottomSheet({
+    required String value,
+    required List<String> items,
+    required Function(String) onChanged,
+    required Map<String, IconData> icons,
+    Map<String, Color>? colors,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: items.map((item) {
+          final isSelected = value == item;
+          Color itemColor;
+          if (colors != null && colors.containsKey(item)) {
+            itemColor = colors[item]!;
+          } else {
+            itemColor = const Color(0xFFE53935);
+          }
+          return InkWell(
+            onTap: () => onChanged(item),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? itemColor.withOpacity(0.1) : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(icons[item], size: 20,
+                      color: isSelected ? itemColor : Colors.grey[600]),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        color: isSelected ? itemColor : Colors.grey[800],
+                      ),
+                    ),
+                  ),
+                  if (isSelected)
+                    Icon(Icons.check_circle, size: 18, color: itemColor),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ✅ Helper para evitar divisão por null — usado nos cards de meta
+  double _toDouble(dynamic value, [double fallback = 0.0]) {
+    if (value == null) return fallback;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    return double.tryParse(value.toString()) ?? fallback;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -673,10 +594,8 @@ Widget _buildFiltroBottomSheet({
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text(
-          'Dashboard',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
+        title: const Text('Dashboard',
+            style: TextStyle(fontWeight: FontWeight.w600)),
         backgroundColor: const Color(0xFFE53935),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -709,16 +628,17 @@ Widget _buildFiltroBottomSheet({
                 childAspectRatio: 1.0,
               ),
               delegate: SliverChildListDelegate([
-                isLoadingMetricas 
+                isLoadingMetricas
                     ? _buildShimmerCard()
                     : _buildMetricaCard(
                         title: 'Fechados',
                         value: '${metricas['fechado'] ?? 0}',
-                        variacao: '${metricas['variacao_fechados'] != null && metricas['variacao_fechados'] > 0 ? '+' : ''}${metricas['variacao_fechados']?.toStringAsFixed(1) ?? '0'}%',
+                        variacao:
+                            '${metricas['variacao_fechados'] != null && metricas['variacao_fechados'] > 0 ? '+' : ''}${_toDouble(metricas['variacao_fechados']).toStringAsFixed(1)}%',
                         icon: Icons.check_circle,
                         color: Colors.green,
                       ),
-                isLoadingMetricas 
+                isLoadingMetricas
                     ? _buildShimmerCard()
                     : _buildMetricaCard(
                         title: 'Abertos',
@@ -727,20 +647,22 @@ Widget _buildFiltroBottomSheet({
                         icon: Icons.email_outlined,
                         color: Colors.orange,
                       ),
-                isLoadingMetricas 
+                isLoadingMetricas
                     ? _buildShimmerCard()
                     : _buildMetricaCard(
                         title: 'Conversão',
-                        value: '${metricas['conversao']?.toStringAsFixed(1) ?? '0'}%',
+                        value:
+                            '${_toDouble(metricas['conversao']).toStringAsFixed(1)}%',
                         variacao: '+2%',
                         icon: Icons.trending_up,
                         color: Colors.blue,
                       ),
-                isLoadingMetricas 
+                isLoadingMetricas
                     ? _buildShimmerCard()
                     : _buildMetricaCard(
                         title: 'Cobertura',
-                        value: '${metricas['cobertura']?.toStringAsFixed(1) ?? '0'}%',
+                        value:
+                            '${_toDouble(metricas['cobertura']).toStringAsFixed(1)}%',
                         variacao: '+5%',
                         icon: Icons.map,
                         color: Colors.purple,
@@ -749,7 +671,7 @@ Widget _buildFiltroBottomSheet({
             ),
           ),
 
-          // Gráfico Principal (Evolução de Vendas)
+          // Gráfico Principal
           SliverToBoxAdapter(
             child: FadeTransition(
               opacity: _fadeAnimation,
@@ -787,18 +709,13 @@ Widget _buildFiltroBottomSheet({
                             const SizedBox(height: 4),
                             Text(
                               '$filtroPeriodo - $filtroLeadSituacao',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[500],
-                              ),
+                              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                             ),
                           ],
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: const Color(0xFFE53935).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
@@ -807,17 +724,18 @@ Widget _buildFiltroBottomSheet({
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                filtroGrafico == 'Linha' ? Icons.show_chart :
-                                filtroGrafico == 'Barra' ? Icons.bar_chart : Icons.pie_chart,
+                                filtroGrafico == 'Linha'
+                                    ? Icons.show_chart
+                                    : Icons.bar_chart,
                                 size: 14,
                                 color: const Color(0xFFE53935),
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 filtroGrafico,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 12,
-                                  color: const Color(0xFFE53935),
+                                  color: Color(0xFFE53935),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -880,17 +798,16 @@ Widget _buildFiltroBottomSheet({
                   else
                     ...leadsPorBairro.entries.take(5).map((entry) {
                       final conversao = conversaoPorBairro[entry.key] ?? 0;
-                      final maxValor = leadsPorBairro.values.reduce((a, b) => a > b ? a : b);
+                      final maxValor = leadsPorBairro.values
+                          .reduce((a, b) => a > b ? a : b);
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Row(
                           children: [
                             Expanded(
                               flex: 2,
-                              child: Text(
-                                entry.key,
-                                style: const TextStyle(fontSize: 14),
-                              ),
+                              child: Text(entry.key,
+                                  style: const TextStyle(fontSize: 14)),
                             ),
                             Expanded(
                               flex: 3,
@@ -902,11 +819,15 @@ Widget _buildFiltroBottomSheet({
                                         child: LinearProgressIndicator(
                                           value: entry.value / maxValor,
                                           backgroundColor: Colors.grey[200],
-                                          valueColor: AlwaysStoppedAnimation<Color>(
-                                            conversao > 0.4 ? Colors.green : Colors.blue,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            conversao > 0.4
+                                                ? Colors.green
+                                                : Colors.blue,
                                           ),
                                           minHeight: 8,
-                                          borderRadius: BorderRadius.circular(4),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
                                         ),
                                       ),
                                       const SizedBox(width: 8),
@@ -949,7 +870,7 @@ Widget _buildFiltroBottomSheet({
             ),
           ),
 
-          // Top Consultores e Alertas em duas colunas
+          // Top Consultores e Alertas
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: SliverGrid(
@@ -999,6 +920,8 @@ Widget _buildFiltroBottomSheet({
                         const Center(child: Text('Nenhum dado disponível'))
                       else
                         ...consultoresTop.take(3).map((c) {
+                          // ✅ Proteção contra null no valor do consultor
+                          final valor = _toDouble(c['valor']);
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 6),
                             child: Row(
@@ -1007,18 +930,19 @@ Widget _buildFiltroBottomSheet({
                                   radius: 10,
                                   backgroundColor: Colors.grey[200],
                                   child: Text(
-                                    c['nome'][0],
+                                    (c['nome'] as String? ?? '?')[0],
                                     style: const TextStyle(fontSize: 9),
                                   ),
                                 ),
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        c['nome'],
+                                        c['nome'] ?? '',
                                         style: const TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w500,
@@ -1027,7 +951,7 @@ Widget _buildFiltroBottomSheet({
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       Text(
-                                        '${c['fechados']} fechados',
+                                        '${c['fechados'] ?? 0} fechados',
                                         style: TextStyle(
                                           fontSize: 9,
                                           color: Colors.grey[600],
@@ -1038,7 +962,8 @@ Widget _buildFiltroBottomSheet({
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'R\$ ${(c['valor'] / 1000).toStringAsFixed(0)}k',
+                                  // ✅ CORRIGIDO: proteção contra null
+                                  'R\$ ${(valor / 1000).toStringAsFixed(0)}k',
                                   style: const TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
@@ -1053,8 +978,8 @@ Widget _buildFiltroBottomSheet({
                       if (!isLoadingConsultores && consultoresTop.isNotEmpty)
                         Center(
                           child: Text(
-                            'Média: ${(consultoresTop.map((c) => c['visitas']).reduce((a, b) => a + b) / consultoresTop.length).toStringAsFixed(0)} visitas | '
-                            '${(consultoresTop.map((c) => c['taxa_conversao']).reduce((a, b) => a + b) / consultoresTop.length).toStringAsFixed(1)}% conversão',
+                            'Média: ${(_toDouble(consultoresTop.map((c) => _toDouble(c['visitas'])).reduce((a, b) => a + b)) / consultoresTop.length).toStringAsFixed(0)} visitas | '
+                            '${(_toDouble(consultoresTop.map((c) => _toDouble(c['taxa_conversao'])).reduce((a, b) => a + b)) / consultoresTop.length).toStringAsFixed(1)}% conversão',
                             style: TextStyle(
                               fontSize: 9,
                               color: Colors.grey[600],
@@ -1087,7 +1012,8 @@ Widget _buildFiltroBottomSheet({
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.notifications_active, color: Colors.red[700], size: 16),
+                          Icon(Icons.notifications_active,
+                              color: Colors.red[700], size: 16),
                           const SizedBox(width: 4),
                           Text(
                             'Ações Prioritárias',
@@ -1103,7 +1029,8 @@ Widget _buildFiltroBottomSheet({
                       if (isLoadingAlertas)
                         const Center(child: CircularProgressIndicator())
                       else if (alertas.isEmpty)
-                        const Center(child: Text('Nenhum alerta no momento'))
+                        const Center(
+                            child: Text('Nenhum alerta no momento'))
                       else
                         ...alertas.map((alerta) {
                           return Padding(
@@ -1111,7 +1038,8 @@ Widget _buildFiltroBottomSheet({
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(alerta.getIconData(), size: 12, color: alerta.getColor()),
+                                Icon(alerta.getIconData(),
+                                    size: 12, color: alerta.getColor()),
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
@@ -1129,12 +1057,12 @@ Widget _buildFiltroBottomSheet({
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Meta mensal',
-                            style: TextStyle(fontSize: 10),
-                          ),
+                          const Text('Meta mensal',
+                              style: TextStyle(fontSize: 10)),
                           Text(
-                            'R\$ ${(meta['atual'] / 1000).toStringAsFixed(0)}k / R\$ ${(meta['meta'] / 1000).toStringAsFixed(0)}k',
+                            // ✅ CORRIGIDO: usa _toDouble para evitar null / 1000
+                            'R\$ ${(_toDouble(meta['atual']) / 1000).toStringAsFixed(0)}k'
+                            ' / R\$ ${(_toDouble(meta['meta']) / 1000).toStringAsFixed(0)}k',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -1145,19 +1073,18 @@ Widget _buildFiltroBottomSheet({
                       ),
                       const SizedBox(height: 2),
                       LinearProgressIndicator(
-                        value: (meta['progresso'] ?? 0) / 100,
+                        // ✅ CORRIGIDO: usa _toDouble para evitar null / 100
+                        value: _toDouble(meta['progresso']) / 100,
                         backgroundColor: Colors.grey[200],
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+                        valueColor:
+                            const AlwaysStoppedAnimation<Color>(Colors.green),
                         minHeight: 4,
                         borderRadius: BorderRadius.circular(2),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Faltam ${meta['dias_restantes'] ?? 0} dias',
-                        style: TextStyle(
-                          fontSize: 8,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 8, color: Colors.grey[600]),
                         textAlign: TextAlign.right,
                       ),
                     ],
@@ -1206,17 +1133,9 @@ Widget _buildFiltroBottomSheet({
             ),
           ),
           const SizedBox(height: 8),
-          Container(
-            width: 40,
-            height: 20,
-            color: Colors.grey[300],
-          ),
+          Container(width: 40, height: 20, color: Colors.grey[300]),
           const SizedBox(height: 4),
-          Container(
-            width: 30,
-            height: 12,
-            color: Colors.grey[300],
-          ),
+          Container(width: 30, height: 12, color: Colors.grey[300]),
         ],
       ),
     );
@@ -1258,16 +1177,21 @@ Widget _buildFiltroBottomSheet({
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
-                  color: variacao.startsWith('+') ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                  color: variacao.startsWith('+')
+                      ? Colors.green.withOpacity(0.1)
+                      : Colors.red.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   variacao,
                   style: TextStyle(
                     fontSize: 8,
-                    color: variacao.startsWith('+') ? Colors.green[700] : Colors.red[700],
+                    color: variacao.startsWith('+')
+                        ? Colors.green[700]
+                        : Colors.red[700],
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1275,26 +1199,16 @@ Widget _buildFiltroBottomSheet({
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(title,
+              style: TextStyle(fontSize: 10, color: Colors.grey[600])),
         ],
       ),
     );
   }
 
-  // MÉTODO _buildGrafico
   Widget _buildGrafico(List<double> dados, List<String> labels) {
     if (dados.isEmpty) {
       return const Center(child: Text('Sem dados para exibir'));
@@ -1307,25 +1221,21 @@ Widget _buildFiltroBottomSheet({
             gridData: FlGridData(
               show: true,
               drawVerticalLine: false,
-              getDrawingHorizontalLine: (value) {
-                return FlLine(
-                  color: Colors.grey.shade200,
-                  strokeWidth: 1,
-                );
-              },
+              getDrawingHorizontalLine: (value) =>
+                  FlLine(color: Colors.grey.shade200, strokeWidth: 1),
             ),
             titlesData: FlTitlesData(
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 && value.toInt() < labels.length) {
+                    if (value.toInt() >= 0 &&
+                        value.toInt() < labels.length) {
                       return Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          labels[value.toInt()],
-                          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                        ),
+                        child: Text(labels[value.toInt()],
+                            style: TextStyle(
+                                fontSize: 10, color: Colors.grey[600])),
                       );
                     }
                     return const Text('');
@@ -1335,16 +1245,17 @@ Widget _buildFiltroBottomSheet({
               leftTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
-                  getTitlesWidget: (value, meta) {
-                    return Text(
-                      value.toInt().toString(),
-                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                    );
-                  },
+                  getTitlesWidget: (value, meta) => Text(
+                    value.toInt().toString(),
+                    style:
+                        TextStyle(fontSize: 10, color: Colors.grey[600]),
+                  ),
                 ),
               ),
-              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles:
+                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles:
+                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
             ),
             borderData: FlBorderData(show: false),
             lineBarsData: [
@@ -1371,25 +1282,21 @@ Widget _buildFiltroBottomSheet({
             gridData: FlGridData(
               show: true,
               drawVerticalLine: false,
-              getDrawingHorizontalLine: (value) {
-                return FlLine(
-                  color: Colors.grey.shade200,
-                  strokeWidth: 1,
-                );
-              },
+              getDrawingHorizontalLine: (value) =>
+                  FlLine(color: Colors.grey.shade200, strokeWidth: 1),
             ),
             titlesData: FlTitlesData(
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 && value.toInt() < labels.length) {
+                    if (value.toInt() >= 0 &&
+                        value.toInt() < labels.length) {
                       return Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          labels[value.toInt()],
-                          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                        ),
+                        child: Text(labels[value.toInt()],
+                            style: TextStyle(
+                                fontSize: 10, color: Colors.grey[600])),
                       );
                     }
                     return const Text('');
@@ -1399,16 +1306,17 @@ Widget _buildFiltroBottomSheet({
               leftTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
-                  getTitlesWidget: (value, meta) {
-                    return Text(
-                      value.toInt().toString(),
-                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                    );
-                  },
+                  getTitlesWidget: (value, meta) => Text(
+                    value.toInt().toString(),
+                    style:
+                        TextStyle(fontSize: 10, color: Colors.grey[600]),
+                  ),
                 ),
               ),
-              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles:
+                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles:
+                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
             ),
             borderData: FlBorderData(show: false),
             barGroups: dados.asMap().entries.map((e) {
