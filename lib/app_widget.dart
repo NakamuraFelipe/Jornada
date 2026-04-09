@@ -17,11 +17,12 @@ import 'package:teste/main.dart';
 import 'package:teste/meus_leads.dart';
 import 'package:teste/perfil_page.dart';
 import 'package:teste/usuarios_supervisionados.dart';
+import 'package:teste/gestao_usuarios_page.dart';    // ✅ NOVO
+import 'package:teste/gerenciar_leads_page.dart';    // ✅ NOVO
 import './models/usuario_logado.dart';
 
 class AppWidget extends StatefulWidget {
   final String title;
-
   const AppWidget({super.key, required this.title});
 
   @override
@@ -48,9 +49,7 @@ class _AppWidgetState extends State<AppWidget> {
       print("Nenhum usuário logado encontrado.");
     }
 
-    setState(() {
-      _carregando = false;
-    });
+    setState(() => _carregando = false);
   }
 
   @override
@@ -77,21 +76,23 @@ class _AppWidgetState extends State<AppWidget> {
           ),
           home: LoginPage(),
           routes: {
-            '/meus_leads': (context) => const MeusLeads(),
-            '/gestor': (context) => HomePage_Gestor(),
-            '/novo_usuario': (context) => CreateUser(),
-            '/home_gestor': (context) => const HomeScreenGestor(),
-            '/login': (context) => LoginPage(),
-            '/pap': (context) => GerenciarPAP(),
-            '/home': (context) => HomePage(),
-            '/inicio': (context) => Inicio(),
-            '/leads': (context) => CreateLead(),
-            '/buscar_leads': (context) => BuscarLead(),
-            '/home_screen': (context) => const HomeScreen(),
-            '/perfil': (context) => PerfilPage(),
-            '/dash': (context) => DashPage(),
-            '/exportar': (context) => ExportarLeads(),
+            '/meus_leads':          (context) => const MeusLeads(),
+            '/gestor':              (context) => HomePage_Gestor(),
+            '/novo_usuario':        (context) => CreateUser(),
+            '/home_gestor':         (context) => const HomeScreenGestor(),
+            '/login':               (context) => LoginPage(),
+            '/pap':                 (context) => GerenciarPAP(),
+            '/home':                (context) => HomePage(),
+            '/inicio':              (context) => Inicio(),
+            '/leads':               (context) => CreateLead(),
+            '/buscar_leads':        (context) => BuscarLead(),
+            '/home_screen':         (context) => const HomeScreen(),
+            '/perfil':              (context) => PerfilPage(),
+            '/dash':                (context) => DashPage(),
+            '/exportar':            (context) => ExportarLeads(),
             '/usuarios_supervisionados': (context) => UsuariosSupervisionados(),
+            '/gestao_usuarios':     (context) => const GestaoUsuariosPage(),  // ✅ NOVO
+            '/gerenciar_leads':     (context) => const GerenciarLeadsPage(),  // ✅ NOVO
           },
         );
       },

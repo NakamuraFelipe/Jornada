@@ -13,11 +13,10 @@ class HomePage_Gestor extends StatefulWidget {
 }
 
 class _HomePage_GestorState extends State<HomePage_Gestor> {
-  // ignore: unused_field
   final int _navIndex = 0;
   int _notificationCount = 5;
 
-  UsuarioLogado? usuario; // usuário logado
+  UsuarioLogado? usuario;
   bool loading = true;
 
   @override
@@ -26,7 +25,6 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
     _carregarUsuarioLogado();
   }
 
-  // Carrega o usuário logado e a foto
   Future<void> _carregarUsuarioLogado() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -34,11 +32,9 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
 
       if (token == null) {
         setState(() => loading = false);
-        debugPrint("Nenhum token encontrado.");
         return;
       }
 
-      // 1️⃣ Pega os dados do usuário
       final response = await http.get(
         Uri.parse('https://jornadabackend-hr3v.onrender.com/usuario_logado'),
         headers: {
@@ -49,48 +45,33 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
         if (data['status'] == 'ok' && data['usuario'] != null) {
           setState(() {
             usuario = UsuarioLogado.fromJson(data['usuario']);
           });
-
-          // 2️⃣ Busca a foto atualizada do usuário
           await _carregarFotoUsuario(usuario!.idUsuario);
-        } else {
-          debugPrint("Erro ao carregar usuário: ${data['mensagem']}");
         }
-      } else if (response.statusCode == 401) {
-        debugPrint("Token inválido ou expirado.");
-      } else {
-        debugPrint("Erro ao carregar usuário: ${response.body}");
       }
     } catch (e) {
-      debugPrint("Erro ao carregar usuário: $e");
+      debugPrint('Erro ao carregar usuário: $e');
     } finally {
       setState(() => loading = false);
     }
   }
 
-  // Busca a foto atualizada do usuário
   Future<void> _carregarFotoUsuario(int idUsuario) async {
     try {
       final response = await http.get(
         Uri.parse('https://jornadabackend-hr3v.onrender.com/usuario/$idUsuario/foto'),
       );
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['status'] == 'ok' && data['foto'] != null) {
-          setState(() {
-            usuario!.foto = data['foto']; // atualiza a foto do usuário
-          });
+          setState(() => usuario!.foto = data['foto']);
         }
-      } else {
-        debugPrint("Erro ao carregar foto: ${response.body}");
       }
     } catch (e) {
-      debugPrint("Erro ao carregar foto: $e");
+      debugPrint('Erro ao carregar foto: $e');
     }
   }
 
@@ -133,9 +114,7 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
                           bottom: false,
                           child: Padding(
                             padding: const EdgeInsetsDirectional.only(
-                              start: 16,
-                              end: 16,
-                              top: 8,
+                              start: 16, end: 16, top: 8,
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -143,54 +122,35 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
                                 Row(
                                   children: [
                                     InkWell(
-                                      onTap: () {
-                                        Navigator.of(
-                                          context,
-                                        ).pushNamed('/perfil');
-                                      },
+                                      onTap: () => Navigator.of(context).pushNamed('/perfil'),
                                       child: CircleAvatar(
                                         radius: 30,
                                         backgroundImage: usuario?.foto != null
-                                            ? MemoryImage(
-                                                base64Decode(usuario!.foto!),
-                                              )
-                                            : const AssetImage(
-                                                    'assets/images/foto_perfil_teste.png',
-                                                  )
-                                                  as ImageProvider,
+                                            ? MemoryImage(base64Decode(usuario!.foto!))
+                                            : const AssetImage('assets/images/foto_perfil_teste.png')
+                                                as ImageProvider,
                                       ),
                                     ),
-
                                     const SizedBox(width: 12),
                                     Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Text(
                                           'Conta: ${usuario?.cargo ?? "Desconhecido"}',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .labelSmall
-                                              ?.copyWith(
-                                                color: Colors.white.withOpacity(
-                                                  .9,
-                                                ),
-                                                fontWeight: FontWeight.w600,
-                                                letterSpacing: .2,
-                                              ),
+                                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                            color: Colors.white.withOpacity(.9),
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: .2,
+                                          ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           'Olá, ${usuario?.nomeUsuario ?? "Usuário"}',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleMedium
-                                              ?.copyWith(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w700,
-                                              ),
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -200,17 +160,10 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
                                   children: [
                                     _NotificationButton(
                                       count: _notificationCount,
-                                      onTap: () {
-                                        setState(() {
-                                          _notificationCount = 0;
-                                        });
-                                      },
+                                      onTap: () => setState(() => _notificationCount = 0),
                                     ),
                                     const SizedBox(width: 12),
-                                    Image.asset(
-                                      'assets/images/logo.png',
-                                      height: 44,
-                                    ),
+                                    Image.asset('assets/images/logo.png', height: 44),
                                   ],
                                 ),
                               ],
@@ -231,9 +184,7 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
                             title: 'Bem-vindo ao APP Ademicon.',
                             subtitle:
                                 'Você tem $_notificationCount notificações de seus LEADS',
-                            onNotifications: () {
-                              debugPrint('Abrir notificações');
-                            },
+                            onNotifications: () => debugPrint('Abrir notificações'),
                           ),
                           const SizedBox(height: 30),
                           _ActionsGrid(
@@ -241,22 +192,17 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
                               ActionItem(
                                 icon: Icons.search_rounded,
                                 label: 'Buscar Leads',
-                                onTap: () => Navigator.of(
-                                  context,
-                                ).pushNamed('/buscar_leads'),
+                                onTap: () => Navigator.of(context).pushNamed('/buscar_leads'),
                               ),
                               ActionItem(
                                 icon: Icons.add_circle_rounded,
                                 label: 'Criar Leads',
-                                onTap: () =>
-                                    Navigator.of(context).pushNamed('/leads'),
+                                onTap: () => Navigator.of(context).pushNamed('/home'),
                               ),
                               ActionItem(
                                 icon: Icons.groups_rounded,
                                 label: 'Meus Leads',
-                                onTap: () => Navigator.of(
-                                  context,
-                                ).pushNamed('/meus_leads'),
+                                onTap: () => Navigator.of(context).pushNamed('/meus_leads'),
                               ),
                               ActionItem(
                                 icon: Icons.bookmark_rounded,
@@ -265,11 +211,20 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
                               ),
                               ActionItem(
                                 icon: Icons.group_rounded,
-                                label: 'Meus  Consultores',
-
-                                onTap: () => Navigator.of(
-                                  context,
-                                ).pushNamed('/usuarios_supervisionados'),
+                                label: 'Meus Consultores',
+                                onTap: () => Navigator.of(context).pushNamed('/usuarios_supervisionados'),
+                              ),
+                              // ✅ NOVO — Gestão de Usuários
+                              ActionItem(
+                                icon: Icons.manage_accounts_rounded,
+                                label: 'Gestão de Usuários',
+                                onTap: () => Navigator.of(context).pushNamed('/gestao_usuarios'),
+                              ),
+                              // ✅ NOVO — Gerenciar Leads
+                              ActionItem(
+                                icon: Icons.swap_horiz_rounded,
+                                label: 'Gerenciar Leads',
+                                onTap: () => Navigator.of(context).pushNamed('/gerenciar_leads'),
                               ),
                             ],
                           ),
@@ -326,7 +281,6 @@ class _HeaderGradient extends StatelessWidget {
   }
 }
 
-/// Botão de sino com badge
 class _NotificationButton extends StatelessWidget {
   final int count;
   final VoidCallback onTap;
@@ -339,10 +293,7 @@ class _NotificationButton extends StatelessWidget {
       children: [
         IconButton(
           onPressed: onTap,
-          icon: const Icon(
-            Icons.notifications_none_rounded,
-            color: Colors.white,
-          ),
+          icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
           tooltip: 'Notificações',
         ),
         if (count > 0)
@@ -364,27 +315,16 @@ class _Badge extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFD32F2F),
         borderRadius: BorderRadius.circular(999),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.15),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(.15), blurRadius: 6, offset: const Offset(0, 2))],
       ),
-      child: Text(
-        display,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w800,
-          letterSpacing: .2,
-        ),
-      ),
+      child: Text(display,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: .2,
+          )),
     );
   }
 }
 
-/// Card de boas-vindas
 class _WelcomeCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -400,208 +340,86 @@ class _WelcomeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
+    final cs = Theme.of(context).colorScheme;
     final labels = const ['Jan', 'Fev', 'Mar', 'Abr', 'Mai'];
     final valores = const [10.0, 14.0, 8.0, 20.0, 16.0];
-
     final maxValor = (valores.reduce((a, b) => a > b ? a : b)) + 5;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            colorScheme.primaryContainer.withOpacity(.92),
-            colorScheme.primaryContainer.withOpacity(.78),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          colors: [cs.primaryContainer.withOpacity(.92), cs.primaryContainer.withOpacity(.78)],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.primary.withOpacity(.25),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: cs.primary.withOpacity(.25), blurRadius: 18, offset: const Offset(0, 10))],
         border: Border.all(color: Colors.white.withOpacity(.16), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.bar_chart_rounded,
-                color: colorScheme.onPrimaryContainer.withOpacity(.9),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Performance por mês de leads fechadas',
+          Row(children: [
+            Icon(Icons.bar_chart_rounded, color: cs.onPrimaryContainer.withOpacity(.9)),
+            const SizedBox(width: 8),
+            Text('Performance por mês de leads fechadas',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                ),
-              ),
-              const Spacer(),
-            ],
-          ),
+                  color: cs.onPrimaryContainer, fontWeight: FontWeight.w700, fontSize: 13,
+                )),
+          ]),
           const SizedBox(height: 12),
-
           SizedBox(
             height: 120,
-            child: BarChart(
-              BarChartData(
-                maxY: maxValor,
-                minY: 0,
-                gridData: FlGridData(
-                  show: false,
-                  drawVerticalLine: false,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: Colors.white.withOpacity(.12),
-                    strokeWidth: 1,
+            child: BarChart(BarChartData(
+              maxY: maxValor,
+              minY: 0,
+              gridData: FlGridData(show: false),
+              barGroups: valores.asMap().entries.map((e) => BarChartGroupData(
+                x: e.key,
+                barsSpace: 8,
+                barRods: [BarChartRodData(
+                  toY: e.value, width: 16,
+                  borderRadius: BorderRadius.circular(8),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                    colors: [Color(0xFFEF5350), Color(0xFFD32F2F)],
                   ),
-                ),
-                barGroups: valores.asMap().entries.map((e) {
-                  final idx = e.key;
-                  final valor = e.value;
-
-                  return BarChartGroupData(
-                    x: idx,
-                    barsSpace: 8,
-                    barRods: [
-                      BarChartRodData(
-                        toY: valor,
-                        width: 16,
-                        borderRadius: BorderRadius.circular(8),
-
-                        gradient: const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Color(0xFFEF5350), Color(0xFFD32F2F)],
-                        ),
-                        backDrawRodData: BackgroundBarChartRodData(
-                          show: true,
-                          toY: maxValor,
-                          color: Colors.white.withOpacity(.10),
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
-
-                titlesData: FlTitlesData(
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: false,
-                      reservedSize: 40,
-                      getTitlesWidget: (value, meta) {
-                        if (value % 5 != 0) {
-                          return const SizedBox.shrink();
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6.0),
-                          child: Text(
-                            value.toInt().toString(),
+                  backDrawRodData: BackgroundBarChartRodData(show: true, toY: maxValor,
+                      color: Colors.white.withOpacity(.10)),
+                )],
+              )).toList(),
+              titlesData: FlTitlesData(
+                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                bottomTitles: AxisTitles(sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 32,
+                  getTitlesWidget: (value, meta) {
+                    final index = value.toInt();
+                    if (index >= 0 && index < labels.length) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 6.0),
+                        child: Text(labels[index],
                             style: TextStyle(
-                              color: colorScheme.onPrimaryContainer.withOpacity(
-                                .7,
-                              ),
-                              fontSize: 11,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 32,
-                      getTitlesWidget: (value, meta) {
-                        final index = value.toInt();
-                        if (index >= 0 && index < labels.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 6.0),
-                            child: Text(
-                              labels[index],
-                              style: TextStyle(
-                                color: colorScheme.onPrimaryContainer
-                                    .withOpacity(.85),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ),
-                ),
-
-                barTouchData: BarTouchData(
-                  enabled: true,
-                  handleBuiltInTouches: true,
-                  touchTooltipData: BarTouchTooltipData(
-                    tooltipPadding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    tooltipRoundedRadius: 10,
-                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      final mes = labels[group.x];
-                      final valor = rod.toY;
-                      return BarTooltipItem(
-                        '$mes\n',
-                        const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: '${valor.toStringAsFixed(1)}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                              color: cs.onPrimaryContainer.withOpacity(.85),
+                              fontWeight: FontWeight.w600,
+                            )),
                       );
-                    },
-                  ),
-                ),
-
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border(
-                    top: BorderSide.none,
-                    right: BorderSide.none,
-                    left: BorderSide(
-                      color: Colors.white.withOpacity(.16),
-                      width: 1,
-                    ),
-                    bottom: BorderSide(
-                      color: Colors.white.withOpacity(.16),
-                      width: 1,
-                    ),
-                  ),
+                    }
+                    return const SizedBox.shrink();
+                  },
+                )),
+              ),
+              borderData: FlBorderData(
+                show: true,
+                border: Border(
+                  top: BorderSide.none, right: BorderSide.none,
+                  left: BorderSide(color: Colors.white.withOpacity(.16), width: 1),
+                  bottom: BorderSide(color: Colors.white.withOpacity(.16), width: 1),
                 ),
               ),
-
-              swapAnimationDuration: const Duration(milliseconds: 450),
-              swapAnimationCurve: Curves.easeOutCubic,
-            ),
+            )),
           ),
         ],
       ),
@@ -621,39 +439,26 @@ class _ActionsGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
-      children: items
-          .map(
-            (item) => GestureDetector(
-              onTap: item.onTap,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(item.icon, size: 36, color: const Color(0xFFD32F2F)),
-                    const SizedBox(height: 12),
-                    Text(
-                      item.label,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          )
-          .toList(),
+      children: items.map((item) => GestureDetector(
+        onTap: item.onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(.05), blurRadius: 10, offset: const Offset(0, 4))],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(item.icon, size: 36, color: const Color(0xFFD32F2F)),
+              const SizedBox(height: 12),
+              Text(item.label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      )).toList(),
     );
   }
 }
@@ -662,6 +467,5 @@ class ActionItem {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-
   ActionItem({required this.icon, required this.label, required this.onTap});
 }
