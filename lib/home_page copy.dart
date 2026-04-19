@@ -771,7 +771,7 @@ class _CriarLeadsState extends State<CriarLeads> {
                           child: Text('Imóvel'),
                         ),
                         DropdownMenuItem(
-                          value: 'veículo',
+                          value: 'veiculo',
                           child: Text('Veículo'),
                         ),
                         DropdownMenuItem(
