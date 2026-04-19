@@ -71,10 +71,10 @@ class Lead {
     'nome_responsavel': responsavel,
     'telefone': telefone,
     'endereco': endereco.toJson(),
-    'estado_leads': status,
+    'estado_lead': status,
     'categoria_venda': categoria,
     'observacao': observacao,
-    'valor_proposta': valor,
+    'valor_acordado': valor,
   };
 }
 
@@ -896,10 +896,10 @@ class _HomePageState extends State<HomePage> {
                       prefixIcon: const Icon(Icons.category, color: kPrimary),
                       enabledBorder: border, focusedBorder: focusBorder),
                   items: const [
-                    DropdownMenuItem(value: 'Imovel',      child: Text('Imóvel')),
-                    DropdownMenuItem(value: 'Veículo',     child: Text('Veículo')),
-                    DropdownMenuItem(value: 'Serviços',    child: Text('Serviços')),
-                    DropdownMenuItem(value: 'Bens Móveis', child: Text('Bens Móveis')),
+                    DropdownMenuItem(value: 'imovel',      child: Text('Imóvel')),
+                    DropdownMenuItem(value: 'veiculo',     child: Text('Veículo')),
+                    DropdownMenuItem(value: 'servicos',    child: Text('Serviços')),
+                    DropdownMenuItem(value: 'bens_moveis', child: Text('Bens Móveis')),
                   ],
                   value: _categoria,
                   onChanged: (v) => setState(() => _categoria = v),
