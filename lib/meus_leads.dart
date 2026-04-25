@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import './models/usuario_logado.dart';
-
+import '../constants.dart';
 const kPrimary = Color(0xFFD32F2F);
 
 class MeusLeads extends StatefulWidget {
@@ -32,7 +32,7 @@ class _MeusLeadsState extends State<MeusLeads> {
   bool _primeiraVez = true;
 
   Timer? _debounce;
-  static const String baseUrl = "https://jornadabackend-hr3v.onrender.com";
+  static const String baseUrl = '$kBaseUrl/login';
 
   @override
   void initState() {

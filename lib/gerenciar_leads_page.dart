@@ -4,9 +4,10 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/lead_gestor.dart';
 import 'models/usuario_consultor.dart';
+import '../constants.dart';
 
 const _kPrimary = Color(0xFFD32F2F);
-const _kBase    = 'https://jornadabackend-hr3v.onrender.com';
+const _kBase    = '$kBaseUrl';
 
 class GerenciarLeadsPage extends StatefulWidget {
   const GerenciarLeadsPage({super.key});

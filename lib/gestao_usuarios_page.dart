@@ -4,9 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/usuario_consultor.dart';
+import '../constants.dart';
 
 const kPrimary = Color(0xFFD32F2F);
-const kBaseUrl = 'https://jornadabackend-hr3v.onrender.com';
 
 class GestaoUsuariosPage extends StatefulWidget {
   const GestaoUsuariosPage({super.key});

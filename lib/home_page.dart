@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants.dart';
 
 /// ==================== MODELS ====================
 class Address {
@@ -763,7 +764,7 @@ class _HomePageState extends State<HomePage> {
       );
 
       final resp = await http.post(
-        Uri.parse('https://jornadabackend-hr3v.onrender.com/criar_lead'),
+        Uri.parse('$kBaseUrl/criar_lead'),
         headers: {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',

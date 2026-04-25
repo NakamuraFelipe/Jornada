@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import './models/usuario_logado.dart';
+import '../constants.dart';
 
 class HomePage_Gestor extends StatefulWidget {
   const HomePage_Gestor({super.key});
@@ -36,7 +37,7 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
       }
 
       final response = await http.get(
-        Uri.parse('https://jornadabackend-hr3v.onrender.com/usuario_logado'),
+        Uri.parse('$kBaseUrl/usuario_logado'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -62,7 +63,7 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
   Future<void> _carregarFotoUsuario(int idUsuario) async {
     try {
       final response = await http.get(
-        Uri.parse('https://jornadabackend-hr3v.onrender.com/usuario/$idUsuario/foto'),
+        Uri.parse('$kBaseUrl/usuario/$idUsuario/foto'),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

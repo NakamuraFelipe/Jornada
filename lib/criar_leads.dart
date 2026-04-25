@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants.dart';
 
 /// ==================== MODELS ====================
 class Address {
@@ -338,7 +339,7 @@ class _CreateLeadState extends State<CreateLead> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
 
-      final uri = Uri.parse('https://jornadabackend-hr3v.onrender.com/criar_lead');
+      final uri = Uri.parse('$kBaseUrl/criar_lead');
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
