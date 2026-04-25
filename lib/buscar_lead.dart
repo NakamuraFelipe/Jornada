@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import './models/usuario_logado.dart';
+import '../constants.dart';
 
 const kPrimary = Color(0xFFD32F2F);
 
@@ -32,7 +33,7 @@ class _MeusLeadsState extends State<BuscarLead> {
   bool _primeiraVez = true;
 
   Timer? _debounce;
-  static const String baseUrl = "https://jornadabackend-hr3v.onrender.com:5000";
+  static const String baseUrl = "$kBaseUrl:5000";
 
   @override
   void initState() {

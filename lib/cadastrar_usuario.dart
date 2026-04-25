@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import '../constants.dart';
 
 // sua cor padrão
 const kPrimary = Color(0xFFD32F2F);
@@ -44,7 +45,7 @@ class _CreateUserState extends State<CreateUser> {
   Future<void> _salvarUsuario() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final uri = Uri.parse("https://jornadabackend-hr3v.onrender.com/usuario");
+    final uri = Uri.parse('$kBaseUrl/usuario');
 
     final body = jsonEncode({
       "nome_usuario": nomeController.text.trim(),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import './models/usuario_logado.dart';
+import '../constants.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -19,7 +20,7 @@ class _LoginPageState extends State<LoginPage> {
 
   // Função de login
   Future<UsuarioLogado?> loginUser(String email, String password) async {
-    final url = Uri.parse("https://jornadabackend-hr3v.onrender.com//login");
+    final url = Uri.parse('$kBaseUrl/login');
 
     try {
       final response = await http.post(
