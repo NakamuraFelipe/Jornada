@@ -18,6 +18,8 @@ class Address {
   final String rua;
   final String numero;
   final String? complemento;
+  final double? latitude;
+  final double? longitude;
 
   Address({
     this.cep,
@@ -28,21 +30,39 @@ class Address {
     required this.rua,
     required this.numero,
     this.complemento,
+    this.latitude,
+    this.longitude,
   });
 
   Map<String, dynamic> toJson() => {
-    'cep': cep,
-    'pais': pais,
+    // ── ESTADO ──
     'estado': estado,
+
+    // ── CIDADE ──
     'cidade': cidade,
+
+    // ── BAIRRO ──
     'bairro': bairro,
+
+    // ── RUA ──
     'rua': rua,
-    'numero': numero,
+
+    // ── LOCALIZACAO ──
+    'cep':         cep,
+    'numero':      numero,
     'complemento': complemento,
+    'latitude':    latitude,
+    'longitude':   longitude,
+
+    // extra
+    'pais': pais,
   };
 
   String resumo() {
-    return '$rua, $numero${complemento != null ? ' - $complemento' : ''}, $bairro, $cidade - $estado, $pais${cep != null ? ', CEP: $cep' : ''}';
+    return '$rua, $numero'
+        '${complemento != null ? ' - $complemento' : ''}, '
+        '$bairro, $cidade - $estado, $pais'
+        '${cep != null ? ', CEP: $cep' : ''}';
   }
 }
 
@@ -102,13 +122,26 @@ class _AddressDialogState extends State<AddressDialog> {
   List<dynamic> sugestoesRua    = [];
 
   // ── Estado de seleção ──
-  String? paisIso;       // ex: "BR"
+  String? paisIso;
   String? estadoPlaceId;
   String? cidadePlaceId;
   double? cidadeLat;
   double? cidadeLng;
   double? bairroLat;
   double? bairroLng;
+  String? estadoShortName;
+  double? estadoLat, estadoLng;
+  bool cidadeSelecionada = false;
+   DateTime? dataSelecionada;
+
+  // ── Dados extraídos da rua (para as tabelas do banco) ──
+  String? ruaNome;
+  String? bairroNome;
+  String? cidadeNome;
+  String? estadoNome;
+  String? cepFormatado;
+  double? ruaLat;
+  double? ruaLng;
 
   // ── Controllers ──
   final _paisCtrl        = TextEditingController();
@@ -135,29 +168,23 @@ class _AddressDialogState extends State<AddressDialog> {
   // HELPERS
   // ─────────────────────────────────────────────
 
-  /// Limpa campos e sugestões dos níveis abaixo do alterado
   void _limparAbaixoDe(String nivel) {
     setState(() {
       switch (nivel) {
-        case 'pais':
-          _estadoCtrl.clear(); sugestoesEstado = []; estadoPlaceId = null;
-          _cidadeCtrl.clear(); sugestoesCidade = []; cidadePlaceId = null;
-          cidadeLat = null; cidadeLng = null;
-          _bairroCtrl.clear(); sugestoesBairro = []; bairroLat = null; bairroLng = null;
-          _ruaCtrl.clear(); sugestoesRua = [];
-          break;
         case 'estado':
           _cidadeCtrl.clear(); sugestoesCidade = []; cidadePlaceId = null;
           cidadeLat = null; cidadeLng = null;
+          cidadeSelecionada = false;
           _bairroCtrl.clear(); sugestoesBairro = []; bairroLat = null; bairroLng = null;
           _ruaCtrl.clear(); sugestoesRua = [];
+          ruaNome = null; bairroNome = null; cidadeNome = null;
+          estadoNome = null; cepFormatado = null; ruaLat = null; ruaLng = null;
           break;
         case 'cidade':
+          cidadeSelecionada = false;
           _bairroCtrl.clear(); sugestoesBairro = []; bairroLat = null; bairroLng = null;
           _ruaCtrl.clear(); sugestoesRua = [];
-          break;
-        case 'bairro':
-          _ruaCtrl.clear(); sugestoesRua = [];
+          ruaNome = null; bairroNome = null; cepFormatado = null; ruaLat = null; ruaLng = null;
           break;
       }
     });
@@ -185,7 +212,7 @@ class _AddressDialogState extends State<AddressDialog> {
   }
 
   Widget _hint(String msg) => Padding(
-    padding: const EdgeInsets.only(left: 4, bottom: 6, top: 2),
+    padding: const EdgeInsets.only(left: 0, bottom: 0, top: 0),
     child: Text(msg, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
   );
 
@@ -239,108 +266,91 @@ class _AddressDialogState extends State<AddressDialog> {
   }
 
   // ─────────────────────────────────────────────
-  // PAÍS
+  // ESTADO
   // ─────────────────────────────────────────────
 
-  Future<void> buscarPaises(String input) async {
-    if (input.length < 2) { setState(() => sugestoesPais = []); return; }
+  
+
+  Future<void> buscarEstados(String input) async {
+    if (input.length < 2) {
+      setState(() => sugestoesEstado = []);
+      return;
+    }
 
     final url = Uri.parse(
       'https://maps.googleapis.com/maps/api/place/autocomplete/json'
       '?input=${Uri.encodeComponent(input)}'
       '&types=(regions)'
+      '&components=country:br'
       '&key=$apiKey'
       '&language=pt_BR',
     );
 
-    debugPrint('🌍 [PAÍS] Buscando: "$input"');
-    debugPrint('🌍 [PAÍS] URL: $url');
-
     try {
       final resp = await http.get(url);
-      debugPrint('🌍 [PAÍS] HTTP ${resp.statusCode}');
-      debugPrint('🌍 [PAÍS] Body: ${resp.body}');
-
       if (resp.statusCode == 200) {
         final dados = json.decode(resp.body);
-        final status = dados['status'];
-        debugPrint('🌍 [PAÍS] API status: $status');
-        if (status == 'REQUEST_DENIED') {
-          debugPrint('🌍 [PAÍS] ⚠️ CHAVE INVÁLIDA OU SEM PERMISSÃO: ${dados['error_message']}');
-        }
         final predictions = (dados['predictions'] as List? ?? []);
-        // prioriza type "country", mas mostra qualquer coisa se não encontrar
-        final paises = predictions.where((p) => (p['types'] as List).contains('country')).toList();
-        setState(() => sugestoesPais = paises.isNotEmpty ? paises : predictions.take(5).toList());
-        debugPrint('🌍 [PAÍS] ${sugestoesPais.length} resultado(s) exibido(s)');
+        final estados = predictions.where((p) {
+          final tipos = (p['types'] as List? ?? []);
+          return tipos.contains('administrative_area_level_1');
+        }).toList();
+        setState(() => sugestoesEstado = estados);
+        debugPrint('🗺️ [ESTADO] ${estados.length} estado(s) para "$input"');
       }
     } catch (e) {
-      debugPrint('🌍 [PAÍS] Erro: $e');
+      debugPrint('🗺️ [ESTADO] Erro: $e');
     }
-  }
-
-  Future<void> selecionarPais(dynamic s) async {
-    final nome = s['structured_formatting']?['main_text'] ?? s['description'];
-    setState(() { _paisCtrl.text = nome; sugestoesPais = []; });
-    _limparAbaixoDe('pais');
-
-    // Extrai código ISO para filtrar estados/cidades corretamente
-    try {
-      final url = Uri.parse(
-        'https://maps.googleapis.com/maps/api/place/details/json'
-        '?place_id=${s['place_id']}'
-        '&fields=address_components'
-        '&key=$apiKey&language=pt_BR',
-      );
-      final resp = await http.get(url);
-      final comps = json.decode(resp.body)['result']?['address_components'] as List? ?? [];
-      for (var c in comps) {
-        if ((c['types'] as List).contains('country')) {
-          paisIso = c['short_name'];
-          debugPrint('🌍 [PAÍS] ISO selecionado: $paisIso');
-        }
-      }
-    } catch (e) { debugPrint('🌍 [PAÍS] Erro detalhes: $e'); }
-  }
-
-  // ─────────────────────────────────────────────
-  // ESTADO
-  // ─────────────────────────────────────────────
-
-  Future<void> buscarEstados(String input) async {
-    if (input.length < 2) { setState(() => sugestoesEstado = []); return; }
-    if (paisIso == null) { debugPrint('⚠️ [ESTADO] País não selecionado'); return; }
-
-    final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/place/autocomplete/json'
-      '?input=${Uri.encodeComponent(input)}'
-      '&types=administrative_area_level_1'
-      '&components=country:${paisIso!.toLowerCase()}'
-      '&key=$apiKey'
-      '&language=pt_BR',
-    );
-
-    debugPrint('🗺️ [ESTADO] Buscando: "$input" (país: $paisIso)');
-    debugPrint('🗺️ [ESTADO] URL: $url');
-
-    try {
-      final resp = await http.get(url);
-      debugPrint('🗺️ [ESTADO] HTTP ${resp.statusCode}');
-      debugPrint('🗺️ [ESTADO] Body: ${resp.body}');
-      if (resp.statusCode == 200) {
-        final dados = json.decode(resp.body);
-        debugPrint('🗺️ [ESTADO] API status: ${dados['status']}');
-        setState(() => sugestoesEstado = dados['predictions'] ?? []);
-      }
-    } catch (e) { debugPrint('🗺️ [ESTADO] Erro: $e'); }
   }
 
   void selecionarEstado(dynamic s) {
     final nome = s['structured_formatting']?['main_text'] ?? s['description'];
     estadoPlaceId = s['place_id'];
-    setState(() { _estadoCtrl.text = nome; sugestoesEstado = []; });
-    _limparAbaixoDe('estado');
-    debugPrint('🗺️ [ESTADO] Selecionado: $nome');
+    _buscarDetalhesEstado(s['place_id'], nome);
+  }
+
+  Future<void> _buscarDetalhesEstado(String placeId, String nomeEstado) async {
+    try {
+      final url = Uri.parse(
+        'https://maps.googleapis.com/maps/api/place/details/json'
+        '?place_id=$placeId'
+        '&fields=geometry,address_components'
+        '&key=$apiKey'
+        '&language=pt_BR',
+      );
+      final resp = await http.get(url);
+      final result = json.decode(resp.body)['result'];
+      if (result == null) return;
+
+      final comps = result['address_components'] as List? ?? [];
+      for (var c in comps) {
+        final types = c['types'] as List;
+        if (types.contains('administrative_area_level_1')) {
+          estadoShortName = c['short_name'];
+          estadoNome = c['long_name'];
+          debugPrint('🗺️ [ESTADO] Sigla: $estadoShortName');
+        }
+        if (types.contains('country')) {
+          paisIso = c['short_name']?.toLowerCase();
+          debugPrint('🗺️ [ESTADO] País ISO: $paisIso');
+        }
+      }
+
+      final loc = result['geometry']?['location'];
+      if (loc != null) {
+        estadoLat = loc['lat'];
+        estadoLng = loc['lng'];
+      }
+
+      setState(() {
+        _estadoCtrl.text = nomeEstado;
+        sugestoesEstado = [];
+      });
+      _limparAbaixoDe('estado');
+      debugPrint('🗺️ [ESTADO] Selecionado: $nomeEstado | $estadoShortName | $paisIso');
+    } catch (e) {
+      debugPrint('🗺️ [ESTADO] Erro detalhes: $e');
+    }
   }
 
   // ─────────────────────────────────────────────
@@ -348,46 +358,76 @@ class _AddressDialogState extends State<AddressDialog> {
   // ─────────────────────────────────────────────
 
   Future<void> buscarCidades(String input) async {
-    if (input.length < 2) { setState(() => sugestoesCidade = []); return; }
-    if (paisIso == null) { debugPrint('⚠️ [CIDADE] País não selecionado'); return; }
+    if (input.length < 2) {
+      setState(() => sugestoesCidade = []);
+      return;
+    }
+
+    final pais = paisIso?.toLowerCase() ?? 'br';
+    final locationBias = (estadoLat != null && estadoLng != null)
+        ? '&location=$estadoLat,$estadoLng&radius=500000'
+        : '';
 
     final url = Uri.parse(
       'https://maps.googleapis.com/maps/api/place/autocomplete/json'
       '?input=${Uri.encodeComponent(input)}'
       '&types=(cities)'
-      '&components=country:${paisIso!.toLowerCase()}'
+      '&components=country:$pais'
+      '$locationBias'
       '&key=$apiKey'
       '&language=pt_BR',
     );
 
-    debugPrint('🏙️ [CIDADE] Buscando: "$input"');
     debugPrint('🏙️ [CIDADE] URL: $url');
 
     try {
       final resp = await http.get(url);
-      debugPrint('🏙️ [CIDADE] HTTP ${resp.statusCode}');
-      debugPrint('🏙️ [CIDADE] Body: ${resp.body}');
       if (resp.statusCode == 200) {
         final dados = json.decode(resp.body);
         debugPrint('🏙️ [CIDADE] API status: ${dados['status']}');
-        setState(() => sugestoesCidade = dados['predictions'] ?? []);
+
+        final predictions = (dados['predictions'] as List? ?? []);
+        final nomeEstado = _estadoCtrl.text.trim().toLowerCase();
+        final sigla = estadoShortName?.toLowerCase() ?? '';
+
+        final filtradas = nomeEstado.isEmpty
+            ? predictions
+            : predictions.where((p) {
+                final desc = (p['description'] as String).toLowerCase();
+                return desc.contains(nomeEstado) || (sigla.isNotEmpty && desc.contains(sigla));
+              }).toList();
+
+        setState(() => sugestoesCidade = filtradas);
+        debugPrint('🏙️ [CIDADE] ${filtradas.length} resultado(s)');
       }
-    } catch (e) { debugPrint('🏙️ [CIDADE] Erro: $e'); }
+    } catch (e) {
+      debugPrint('🏙️ [CIDADE] Erro: $e');
+    }
   }
 
   Future<void> selecionarCidade(dynamic s) async {
     final nome = s['structured_formatting']?['main_text'] ?? s['description'];
     cidadePlaceId = s['place_id'];
-    setState(() { _cidadeCtrl.text = nome; sugestoesCidade = []; });
-    _limparAbaixoDe('cidade');
+
+    setState(() {
+      _cidadeCtrl.text = nome;
+      sugestoesCidade = [];
+      cidadeSelecionada = true;
+      _ruaCtrl.clear();
+      _bairroCtrl.clear();
+      sugestoesRua = [];
+      sugestoesBairro = [];
+    });
 
     try {
       final url = Uri.parse(
         'https://maps.googleapis.com/maps/api/place/details/json'
         '?place_id=$cidadePlaceId'
         '&fields=geometry,address_components'
-        '&key=$apiKey&language=pt_BR',
+        '&key=$apiKey'
+        '&language=pt_BR',
       );
+
       final resp = await http.get(url);
       final result = json.decode(resp.body)['result'];
       if (result == null) return;
@@ -396,94 +436,29 @@ class _AddressDialogState extends State<AddressDialog> {
       if (loc != null) {
         cidadeLat = loc['lat'];
         cidadeLng = loc['lng'];
-        debugPrint('🏙️ [CIDADE] Coords: $cidadeLat, $cidadeLng');
+        debugPrint('🏙️ [CIDADE] ✅ Coords: $cidadeLat, $cidadeLng');
       }
 
-      // Preenche estado automaticamente se vazio
       final comps = result['address_components'] as List? ?? [];
       for (var c in comps) {
-        if ((c['types'] as List).contains('administrative_area_level_1') && _estadoCtrl.text.isEmpty) {
+        final types = c['types'] as List;
+        if (types.contains('locality') || types.contains('administrative_area_level_2')) {
+          cidadeNome ??= c['long_name'];
+        }
+        if (types.contains('administrative_area_level_1') && _estadoCtrl.text.isEmpty) {
+          estadoShortName = c['short_name'];
+          estadoNome = c['long_name'];
           setState(() => _estadoCtrl.text = c['long_name'] ?? '');
         }
-      }
-    } catch (e) { debugPrint('🏙️ [CIDADE] Erro detalhes: $e'); }
-  }
-
-  // ─────────────────────────────────────────────
-  // BAIRRO
-  // ─────────────────────────────────────────────
-
-  Future<void> buscarBairros(String input) async {
-    if (input.length < 2) { setState(() => sugestoesBairro = []); return; }
-    if (cidadeLat == null || cidadeLng == null) {
-      debugPrint('⚠️ [BAIRRO] Cidade não selecionada');
-      return;
-    }
-
-    final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/place/autocomplete/json'
-      '?input=${Uri.encodeComponent(input)}'
-      '&types=sublocality'
-      '&location=$cidadeLat,$cidadeLng'
-      '&radius=25000'
-      '&key=$apiKey'
-      '&language=pt_BR',
-    );
-
-    debugPrint('🏘️ [BAIRRO] Buscando: "$input"');
-    debugPrint('🏘️ [BAIRRO] URL: $url');
-
-    try {
-      final resp = await http.get(url);
-      debugPrint('🏘️ [BAIRRO] HTTP ${resp.statusCode}');
-      debugPrint('🏘️ [BAIRRO] Body: ${resp.body}');
-
-      if (resp.statusCode == 200) {
-        final dados = json.decode(resp.body);
-        debugPrint('🏘️ [BAIRRO] API status: ${dados['status']}');
-        List predictions = dados['predictions'] ?? [];
-
-        // Fallback: busca genérica na área da cidade
-        if (predictions.isEmpty) {
-          debugPrint('🏘️ [BAIRRO] Sem resultados, tentando fallback genérico...');
-          final urlFb = Uri.parse(
-            'https://maps.googleapis.com/maps/api/place/autocomplete/json'
-            '?input=${Uri.encodeComponent(input)}'
-            '&location=$cidadeLat,$cidadeLng'
-            '&radius=20000'
-            '&key=$apiKey&language=pt_BR',
-          );
-          final respFb = await http.get(urlFb);
-          debugPrint('🏘️ [BAIRRO] Fallback body: ${respFb.body}');
-          predictions = json.decode(respFb.body)['predictions'] ?? [];
+        if (types.contains('country') && paisIso == null) {
+          paisIso = c['short_name']?.toLowerCase();
         }
-
-        setState(() => sugestoesBairro = predictions);
-        debugPrint('🏘️ [BAIRRO] ${predictions.length} resultado(s)');
       }
-    } catch (e) { debugPrint('🏘️ [BAIRRO] Erro: $e'); }
-  }
 
-  Future<void> selecionarBairro(dynamic s) async {
-    final nome = s['structured_formatting']?['main_text'] ?? s['description'];
-    setState(() { _bairroCtrl.text = nome; sugestoesBairro = []; });
-    _limparAbaixoDe('bairro');
-
-    try {
-      final url = Uri.parse(
-        'https://maps.googleapis.com/maps/api/place/details/json'
-        '?place_id=${s['place_id']}'
-        '&fields=geometry'
-        '&key=$apiKey&language=pt_BR',
-      );
-      final resp = await http.get(url);
-      final loc = json.decode(resp.body)['result']?['geometry']?['location'];
-      if (loc != null) {
-        bairroLat = loc['lat'];
-        bairroLng = loc['lng'];
-        debugPrint('🏘️ [BAIRRO] Coords: $bairroLat, $bairroLng');
-      }
-    } catch (e) { debugPrint('🏘️ [BAIRRO] Erro detalhes: $e'); }
+      cidadeNome ??= nome;
+    } catch (e) {
+      debugPrint('🏙️ [CIDADE] Erro detalhes: $e');
+    }
   }
 
   // ─────────────────────────────────────────────
@@ -491,13 +466,12 @@ class _AddressDialogState extends State<AddressDialog> {
   // ─────────────────────────────────────────────
 
   Future<void> buscarRuas(String input) async {
-    if (input.length < 2) { setState(() => sugestoesRua = []); return; }
-
-    final lat = bairroLat ?? cidadeLat;
-    final lng = bairroLng ?? cidadeLng;
-
-    if (lat == null || lng == null) {
-      debugPrint('⚠️ [RUA] Cidade/bairro não selecionado');
+    if (input.length < 2) {
+      setState(() => sugestoesRua = []);
+      return;
+    }
+    if (cidadeLat == null || cidadeLng == null) {
+      debugPrint('⚠️ [RUA] Aguardando coords da cidade...');
       return;
     }
 
@@ -505,50 +479,129 @@ class _AddressDialogState extends State<AddressDialog> {
       'https://maps.googleapis.com/maps/api/place/autocomplete/json'
       '?input=${Uri.encodeComponent(input)}'
       '&types=address'
-      '&location=$lat,$lng'
-      '&radius=10000'
+      '&location=$cidadeLat,$cidadeLng'
+      '&radius=20000'
       '&key=$apiKey'
       '&language=pt_BR',
     );
 
-    debugPrint('🛣️ [RUA] Buscando: "$input"');
-    debugPrint('🛣️ [RUA] URL: $url');
+    debugPrint('🛣️ [RUA] Buscando: "$input" | centro: $cidadeLat,$cidadeLng');
 
     try {
       final resp = await http.get(url);
-      debugPrint('🛣️ [RUA] HTTP ${resp.statusCode}');
-      debugPrint('🛣️ [RUA] Body: ${resp.body}');
       if (resp.statusCode == 200) {
         final dados = json.decode(resp.body);
         debugPrint('🛣️ [RUA] API status: ${dados['status']}');
-        setState(() => sugestoesRua = dados['predictions'] ?? []);
+        final predictions = (dados['predictions'] as List? ?? []);
+
+        final cidadeNomeLocal = _cidadeCtrl.text.trim().toLowerCase();
+        final filtradas = predictions.where((p) {
+          final desc = (p['description'] as String).toLowerCase();
+          return desc.contains(cidadeNomeLocal);
+        }).toList();
+
+        setState(() => sugestoesRua = filtradas);
+        debugPrint('🛣️ [RUA] ${filtradas.length} resultado(s)');
       }
-    } catch (e) { debugPrint('🛣️ [RUA] Erro: $e'); }
+    } catch (e) {
+      debugPrint('🛣️ [RUA] Erro: $e');
+    }
   }
 
   Future<void> selecionarRua(dynamic s) async {
-    final nome = s['structured_formatting']?['main_text'] ?? s['description'];
-    setState(() { _ruaCtrl.text = nome; sugestoesRua = []; });
-    debugPrint('🛣️ [RUA] Selecionada: $nome');
+    final nomeExibido = s['structured_formatting']?['main_text'] ?? s['description'];
+    setState(() {
+      _ruaCtrl.text = nomeExibido;
+      sugestoesRua = [];
+    });
+    debugPrint('🛣️ [RUA] Selecionada: $nomeExibido');
 
-    // Preenche bairro se estiver vazio
     try {
       final url = Uri.parse(
         'https://maps.googleapis.com/maps/api/place/details/json'
         '?place_id=${s['place_id']}'
-        '&fields=address_components'
-        '&key=$apiKey&language=pt_BR',
+        '&fields=address_components,geometry'
+        '&key=$apiKey'
+        '&language=pt_BR',
       );
       final resp = await http.get(url);
-      final comps = json.decode(resp.body)['result']?['address_components'] as List? ?? [];
+      final result = json.decode(resp.body)['result'];
+      if (result == null) return;
+
+      // ── Coordenadas da rua → LOCALIZACAO.LATITUDE / LONGITUDE ──
+      final loc = result['geometry']?['location'];
+      if (loc != null) {
+        ruaLat = loc['lat'];
+        ruaLng = loc['lng'];
+        debugPrint('🛣️ [RUA] Coords: $ruaLat, $ruaLng');
+      }
+
+      // ── Extrai todos os componentes ──
+      final comps = result['address_components'] as List? ?? [];
+
+      String? rua;
+      String? bairro;
+      String? cidade;
+      String? estado;
+      String? cep;
+
       for (var c in comps) {
         final types = c['types'] as List;
-        if ((types.contains('sublocality') || types.contains('sublocality_level_1')) &&
-            _bairroCtrl.text.isEmpty) {
-          setState(() => _bairroCtrl.text = c['long_name'] ?? '');
+
+        // NOME_RUA → RUA.NOME_RUA
+        if (types.contains('route')) {
+          rua = c['long_name'];
+        }
+
+        // NOME_BAIRRO → BAIRRO.NOME_BAIRRO
+        if (types.contains('sublocality_level_1') ||
+            types.contains('sublocality') ||
+            types.contains('neighborhood')) {
+          bairro ??= c['long_name'];
+        }
+
+        // NOME_CIDADE → CIDADE.NOME_CIDADE
+        if (types.contains('locality') ||
+            types.contains('administrative_area_level_2')) {
+          cidade ??= c['long_name'];
+        }
+
+        // NOME_ESTADO → ESTADO.NOME_ESTADO
+        if (types.contains('administrative_area_level_1')) {
+          estado = c['long_name'];
+        }
+
+        // CEP → LOCALIZACAO.CEP
+        if (types.contains('postal_code')) {
+          cep = c['long_name'];
         }
       }
-    } catch (e) { debugPrint('🛣️ [RUA] Erro detalhes: $e'); }
+
+      // ── Atualiza a UI ──
+      setState(() {
+        if (rua != null)    _ruaCtrl.text    = rua;
+        if (bairro != null) _bairroCtrl.text = bairro;
+        if (cidade != null && _cidadeCtrl.text.isEmpty) _cidadeCtrl.text = cidade;
+        if (estado != null && _estadoCtrl.text.isEmpty) _estadoCtrl.text = estado;
+      });
+
+      // ── Salva para enviar ao backend ──
+      ruaNome      = rua    ?? nomeExibido;
+      bairroNome   = bairro ?? _bairroCtrl.text;
+      cidadeNome   = cidade ?? _cidadeCtrl.text;
+      estadoNome   = estado ?? _estadoCtrl.text;
+      cepFormatado = cep;
+
+      debugPrint('🛣️ [RUA] Dados extraídos:');
+      debugPrint('  NOME_RUA:    $ruaNome');
+      debugPrint('  NOME_BAIRRO: $bairroNome');
+      debugPrint('  NOME_CIDADE: $cidadeNome');
+      debugPrint('  NOME_ESTADO: $estadoNome');
+      debugPrint('  CEP:         $cepFormatado');
+      debugPrint('  LAT/LNG:     $ruaLat, $ruaLng');
+    } catch (e) {
+      debugPrint('🛣️ [RUA] Erro detalhes: $e');
+    }
   }
 
   // ─────────────────────────────────────────────
@@ -558,14 +611,18 @@ class _AddressDialogState extends State<AddressDialog> {
   void _confirmar() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     Navigator.of(context).pop(Address(
-      pais:        _paisCtrl.text.trim().isEmpty ? 'Brasil' : _paisCtrl.text.trim(),
-      estado:      _estadoCtrl.text.trim(),
-      cidade:      _cidadeCtrl.text.trim(),
-      bairro:      _bairroCtrl.text.trim(),
-      rua:         _ruaCtrl.text.trim(),
+      cep:         cepFormatado,
+      pais:        paisIso?.toUpperCase() ?? 'BR',
+      estado:      estadoNome   ?? _estadoCtrl.text.trim(),
+      cidade:      cidadeNome   ?? _cidadeCtrl.text.trim(),
+      bairro:      bairroNome   ?? _bairroCtrl.text.trim(),
+      rua:         ruaNome      ?? _ruaCtrl.text.trim(),
       numero:      _numeroCtrl.text.trim(),
       complemento: _complementoCtrl.text.trim().isEmpty ? null : _complementoCtrl.text.trim(),
+      latitude:    ruaLat,
+      longitude:   ruaLng,
     ));
+    
   }
 
   // ─────────────────────────────────────────────
@@ -574,8 +631,8 @@ class _AddressDialogState extends State<AddressDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final bool temPais   = paisIso != null;
-    final bool temCidade = cidadeLat != null;
+    final bool temEstado = paisIso != null;
+    final bool temCidade = cidadeSelecionada;
 
     return AlertDialog(
       title: const Text('Selecionar Endereço'),
@@ -590,48 +647,26 @@ class _AddressDialogState extends State<AddressDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
 
-                // ── PAÍS ──
-                TextFormField(
-                  controller: _paisCtrl,
-                  decoration: _dec('País *', Icons.public),
-                  onChanged: buscarPaises,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe o país' : null,
-                ),
-                _buildSugestoes(sugestoesPais, selecionarPais),
-
                 // ── ESTADO ──
                 TextFormField(
                   controller: _estadoCtrl,
-                  decoration: _dec('Estado *', Icons.map, enabled: temPais),
-                  enabled: temPais,
-                  onChanged: temPais ? buscarEstados : null,
+                  decoration: _dec('Estado *', Icons.map),
+                  onChanged: buscarEstados,
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe o estado' : null,
                 ),
-                if (!temPais) _hint('Selecione um país primeiro'),
                 _buildSugestoes(sugestoesEstado, selecionarEstado),
-
+const SizedBox(height: 12),
                 // ── CIDADE ──
                 TextFormField(
                   controller: _cidadeCtrl,
-                  decoration: _dec('Cidade *', Icons.location_city, enabled: temPais),
-                  enabled: temPais,
-                  onChanged: temPais ? buscarCidades : null,
+                  decoration: _dec('Cidade *', Icons.location_city, enabled: temEstado),
+                  enabled: temEstado,
+                  onChanged: temEstado ? buscarCidades : null,
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe a cidade' : null,
                 ),
-                if (!temPais) _hint('Selecione um estado primeiro'),
+                if (!temEstado) _hint('Selecione um estado primeiro'),
                 _buildSugestoes(sugestoesCidade, selecionarCidade),
-
-                // ── BAIRRO ──
-                TextFormField(
-                  controller: _bairroCtrl,
-                  decoration: _dec('Bairro *', Icons.holiday_village, enabled: temCidade),
-                  enabled: temCidade,
-                  onChanged: temCidade ? buscarBairros : null,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe o bairro' : null,
-                ),
-                if (!temCidade) _hint('Selecione uma cidade primeiro'),
-                _buildSugestoes(sugestoesBairro, selecionarBairro),
-
+const SizedBox(height: 12),
                 // ── RUA ──
                 TextFormField(
                   controller: _ruaCtrl,
@@ -640,10 +675,10 @@ class _AddressDialogState extends State<AddressDialog> {
                   onChanged: temCidade ? buscarRuas : null,
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe a rua' : null,
                 ),
-                if (!temCidade) _hint('Selecione uma cidade primeiro'),
+                if (!temCidade) _hint("Selecione um estado primeiro"),
                 _buildSugestoes(sugestoesRua, selecionarRua),
 
-                const SizedBox(height: 4),
+                const SizedBox(height: 12),
 
                 // ── NÚMERO ──
                 TextFormField(
@@ -691,6 +726,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
+
 class _HomePageState extends State<HomePage> {
   final _formKey = GlobalKey<FormState>();
 
@@ -699,6 +735,8 @@ class _HomePageState extends State<HomePage> {
   final _valorCtrl       = TextEditingController();
   final _obsCtrl         = TextEditingController();
   final _nome_localCtrl  = TextEditingController();
+  DateTime? _dataSelecionada;
+final _dataCtrl = TextEditingController();
 
   String? _categoria;
   String? _statusLead;
@@ -714,6 +752,22 @@ class _HomePageState extends State<HomePage> {
     _nome_localCtrl.dispose();
     super.dispose();
   }
+  Future<void> _selecionarData(BuildContext context) async {
+  final DateTime? data = await showDatePicker(
+    context: context,
+    initialDate: DateTime.now(),
+    firstDate: DateTime(2000),
+    lastDate: DateTime(2100),
+  );
+
+  if (data != null) {
+    setState(() {
+      _dataSelecionada = data;
+      _dataCtrl.text =
+          '${data.day}/${data.month}/${data.year}';
+    });
+  }
+}
 
   Future<void> _abrirDialogEndereco() async {
     final selecionado = await showDialog<Address>(
@@ -887,7 +941,7 @@ class _HomePageState extends State<HomePage> {
                   controller: _valorCtrl,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')), ValorInputFormatter()],
-                  decoration: InputDecoration(labelText: 'Valor da Proposta',
+                  decoration: InputDecoration(labelText: 'Valor da Proposta (opcional)',
                       prefixIcon: const Icon(Icons.attach_money, color: kPrimary),
                       enabledBorder: border, focusedBorder: focusBorder),
                 ),
@@ -897,14 +951,16 @@ class _HomePageState extends State<HomePage> {
                       prefixIcon: const Icon(Icons.category, color: kPrimary),
                       enabledBorder: border, focusedBorder: focusBorder),
                   items: const [
+                    DropdownMenuItem(value: null ,      child: Text('Nenhuma')),
                     DropdownMenuItem(value: 'imovel',      child: Text('Imóvel')),
                     DropdownMenuItem(value: 'veiculo',     child: Text('Veículo')),
-                    DropdownMenuItem(value: 'servicos',    child: Text('Serviços')),
+                    DropdownMenuItem(value: 'servico',     child: Text('Serviços')),
                     DropdownMenuItem(value: 'bens_moveis', child: Text('Bens Móveis')),
                   ],
                   value: _categoria,
                   onChanged: (v) => setState(() => _categoria = v),
                 ),
+                
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _obsCtrl,
@@ -914,6 +970,18 @@ class _HomePageState extends State<HomePage> {
                       alignLabelWithHint: true,
                       enabledBorder: border, focusedBorder: focusBorder),
                 ),
+                const SizedBox(height: 16),
+                 TextFormField(
+  controller: _dataCtrl,
+  readOnly: true,
+  decoration: InputDecoration(
+    labelText: 'ProximaVisita (opcional)',
+    prefixIcon: const Icon(Icons.calendar_today, color: kPrimary),
+    enabledBorder: border,
+    focusedBorder: focusBorder,
+  ),
+  onTap: () => _selecionarData(context),
+),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: _saving ? null : _salvar,
