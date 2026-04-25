@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'service/dashboard_service.dart';
 import 'models/dashboard_models.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashPage extends StatefulWidget {
   @override
@@ -9,6 +10,7 @@ class DashPage extends StatefulWidget {
 }
 
 class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin {
+  // Filtros
   String filtroGrafico = 'Linha';
   String filtroPeriodo = 'Mes';
   String filtroLeadSituacao = 'Todos';
@@ -16,10 +18,8 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
   String filtroCidade = 'Todas';
   String filtroBairro = 'Todos';
   String filtroCategoria = 'Todas';
-  RangeValues filtroValor = const RangeValues(0, 100000);
-  String filtroTempoExistencia = 'Todos';
-  String filtroRiscoChurn = 'Todos';
 
+  // Dados
   Map<String, dynamic> metricas = {};
   List<double> dadosGrafico = [];
   List<String> labelsGrafico = [];
@@ -29,22 +29,24 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
   List<Alerta> alertas = [];
   Map<String, dynamic> meta = {};
 
+  // Opções de filtros
   List<String> estados = ['Todos'];
   List<dynamic> cidades = [];
   List<dynamic> bairros = [];
   List<String> categorias = ['Todas'];
 
-  bool isLoadingMetricas = true;
+  // Estados de loading
+  bool isLoading = true;
   bool isLoadingGrafico = true;
   bool isLoadingBairros = true;
   bool isLoadingConsultores = true;
   bool isLoadingAlertas = true;
-  bool isLoadingFiltros = true;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
-  int? idUsuarioLogado = 8;
+  int? idUsuarioLogado;
+  String? token;
 
   @override
   void initState() {
@@ -57,11 +59,36 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
       parent: _animationController,
       curve: Curves.easeInOut,
     );
-    _carregarTodosDados();
-    _carregarOpcoesFiltros();
+    _carregarDadosIniciais();
+  }
+
+  Future<void> _carregarDadosIniciais() async {
+    await _carregarUsuarioEToken();
+  }
+
+  Future<void> _carregarUsuarioEToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      token = prefs.getString('token');
+      idUsuarioLogado = prefs.getInt('id_usuario');
+      
+      if (token != null && token!.isNotEmpty) {
+        await _carregarTodosDados();
+        await _carregarOpcoesFiltros();
+      } else {
+        _mostrarErro('Usuário não logado. Faça login novamente.');
+        setState(() => isLoading = false);
+      }
+    } catch (e) {
+      print('Erro ao carregar token: $e');
+      _mostrarErro('Erro ao carregar dados do usuário');
+      setState(() => isLoading = false);
+    }
   }
 
   Future<void> _carregarTodosDados() async {
+    setState(() => isLoading = true);
+    
     await Future.wait([
       _carregarMetricas(),
       _carregarGrafico(),
@@ -69,44 +96,48 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
       _carregarTopConsultores(),
       _carregarAlertas(),
     ]);
+    
     _animationController.forward();
+    setState(() => isLoading = false);
   }
 
   Future<void> _carregarMetricas() async {
-    setState(() => isLoadingMetricas = true);
+    print('Chamando getMetricas com token: $token');
+    print('URL: ${DashboardService.baseUrl}/metricas');
     try {
       metricas = await DashboardService.getMetricas(
+        token: token!,
         idUsuario: idUsuarioLogado,
         estado: filtroEstado != 'Todos' ? filtroEstado : null,
         cidade: filtroCidade != 'Todas' ? filtroCidade : null,
         bairro: filtroBairro != 'Todos' ? filtroBairro : null,
         categoria: filtroCategoria != 'Todas' ? filtroCategoria : null,
-        valorMin: filtroValor.start,
-        valorMax: filtroValor.end,
       );
     } catch (e) {
       print('Erro ao carregar métricas: $e');
-      metricas = {
-        'fechado': 2590,
-        'abertos': 2723,
-        'conexao': 1461,
-        'negociacao': 450,
-        'total': 6774,
-        'conversao': 38.2,
-        'cobertura': 68,
-        'valor_total': 1250000,
-        'media_anual': 42500,
-        'variacao_fechados': 12.5,
-      };
-    } finally {
-      setState(() => isLoadingMetricas = false);
+      metricas = _getMetricasPadrao();
     }
+  }
+
+  Map<String, dynamic> _getMetricasPadrao() {
+    return {
+      'fechado': 0,
+      'abertos': 0,
+      'conexao': 0,
+      'negociacao': 0,
+      'total': 0,
+      'conversao': 0,
+      'cobertura': 0,
+      'variacao_fechados': 0,
+      'leads_ano_atual': 0,
+    };
   }
 
   Future<void> _carregarGrafico() async {
     setState(() => isLoadingGrafico = true);
     try {
       final resultado = await DashboardService.getEvolucao(
+        token: token!,
         periodo: filtroPeriodo,
         situacao: filtroLeadSituacao,
         idUsuario: idUsuarioLogado,
@@ -118,29 +149,10 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
       labelsGrafico = resultado['labels'];
     } catch (e) {
       print('Erro ao carregar gráfico: $e');
-      _carregarDadosMockGrafico();
+      dadosGrafico = [];
+      labelsGrafico = [];
     } finally {
       setState(() => isLoadingGrafico = false);
-    }
-  }
-
-  void _carregarDadosMockGrafico() {
-    switch (filtroPeriodo) {
-      case 'Dia':
-        labelsGrafico = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-        dadosGrafico = [12, 19, 15, 22, 28, 35, 42];
-        break;
-      case 'Semana':
-        labelsGrafico = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'];
-        dadosGrafico = [85, 92, 88, 105];
-        break;
-      case 'Ano':
-        labelsGrafico = ['2021', '2022', '2023', '2024', '2025'];
-        dadosGrafico = [3850, 4120, 4580, 5120, 5890];
-        break;
-      default:
-        labelsGrafico = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-        dadosGrafico = [320, 345, 368, 392, 415, 438, 452, 478, 495, 512, 538, 560];
     }
   }
 
@@ -148,28 +160,17 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
     setState(() => isLoadingBairros = true);
     try {
       final resultado = await DashboardService.getLeadsPorBairro(
+        token: token!,
         idUsuario: idUsuarioLogado,
         estado: filtroEstado != 'Todos' ? filtroEstado : null,
         cidade: filtroCidade != 'Todas' ? filtroCidade : null,
       );
-      leadsPorBairro = resultado['leads_por_bairro'];
-      conversaoPorBairro = resultado['conversao_por_bairro'];
+      leadsPorBairro = resultado['leads_por_bairro'] ?? {};
+      conversaoPorBairro = resultado['conversao_por_bairro'] ?? {};
     } catch (e) {
       print('Erro ao carregar leads por bairro: $e');
-      leadsPorBairro = {
-        'Centro': 45,
-        'Jardins': 38,
-        'Pinheiros': 32,
-        'Vila Mariana': 28,
-        'Moema': 25,
-      };
-      conversaoPorBairro = {
-        'Centro': 0.33,
-        'Jardins': 0.42,
-        'Pinheiros': 0.38,
-        'Vila Mariana': 0.29,
-        'Moema': 0.48,
-      };
+      leadsPorBairro = {};
+      conversaoPorBairro = {};
     } finally {
       setState(() => isLoadingBairros = false);
     }
@@ -178,16 +179,10 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
   Future<void> _carregarTopConsultores() async {
     setState(() => isLoadingConsultores = true);
     try {
-      consultoresTop = await DashboardService.getTopConsultores(limit: 5);
+      consultoresTop = await DashboardService.getTopConsultores(token: token!);
     } catch (e) {
       print('Erro ao carregar top consultores: $e');
-      consultoresTop = [
-        {'nome': 'João Silva', 'visitas': 45, 'fechados': 12, 'valor': 45000, 'taxa_conversao': 26.7},
-        {'nome': 'Maria Santos', 'visitas': 38, 'fechados': 10, 'valor': 38000, 'taxa_conversao': 26.3},
-        {'nome': 'Carlos Oliveira', 'visitas': 52, 'fechados': 9, 'valor': 35000, 'taxa_conversao': 17.3},
-        {'nome': 'Ana Paula', 'visitas': 41, 'fechados': 11, 'valor': 42000, 'taxa_conversao': 26.8},
-        {'nome': 'Pedro Mendes', 'visitas': 33, 'fechados': 7, 'valor': 28000, 'taxa_conversao': 21.2},
-      ];
+      consultoresTop = [];
     } finally {
       setState(() => isLoadingConsultores = false);
     }
@@ -196,19 +191,22 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
   Future<void> _carregarAlertas() async {
     setState(() => isLoadingAlertas = true);
     try {
-      final resultado = await DashboardService.getAlertas(idUsuario: idUsuarioLogado);
+      final resultado = await DashboardService.getAlertas(
+        token: token!,
+        idUsuario: idUsuarioLogado,
+      );
       alertas = (resultado['alertas'] as List)
           .map((a) => Alerta.fromJson(a))
           .toList();
       meta = resultado['meta'] ?? {};
     } catch (e) {
       print('Erro ao carregar alertas: $e');
-      // ✅ Fallback garante que meta nunca fica com valores null
+      alertas = [];
       meta = {
-        'atual': 320000.0,
-        'meta': 500000.0,
-        'progresso': 64.0,
-        'dias_restantes': 10,
+        'atual': 0,
+        'meta': 0,
+        'progresso': 0,
+        'dias_restantes': 0,
       };
     } finally {
       setState(() => isLoadingAlertas = false);
@@ -216,19 +214,14 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
   }
 
   Future<void> _carregarOpcoesFiltros() async {
-    setState(() => isLoadingFiltros = true);
     try {
-      final resultado = await DashboardService.getOpcoesFiltros();
+      final resultado = await DashboardService.getOpcoesFiltros(token: token!);
       estados = List<String>.from(resultado['estados']);
       cidades = resultado['cidades'];
       bairros = resultado['bairros'];
       categorias = List<String>.from(resultado['categorias']);
     } catch (e) {
       print('Erro ao carregar opções de filtros: $e');
-      estados = ['Todos', 'SP', 'RJ', 'MG'];
-      categorias = ['Todas', 'imovel', 'veiculo', 'servico', 'bens_moveis'];
-    } finally {
-      setState(() => isLoadingFiltros = false);
     }
   }
 
@@ -250,13 +243,18 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
     return ['Todos', ...bairrosDaCidade];
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
+  void _mostrarErro(String mensagem) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), backgroundColor: Colors.red),
+    );
   }
 
-  Map<String, dynamic> calcularMetricas() => metricas;
+  void _aplicarFiltros() {
+    setState(() {
+      _animationController.reset();
+      _carregarTodosDados();
+    });
+  }
 
   void _abrirFiltros() {
     showModalBottomSheet(
@@ -300,111 +298,105 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('📍 LOCALIZAÇÃO',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 8),
-                          _buildFiltroDropdown(
-                            value: filtroEstado,
-                            items: estados,
-                            label: 'Estado',
-                            onChanged: (value) {
-                              setModalState(() {
-                                filtroEstado = value;
-                                filtroCidade = 'Todas';
-                                filtroBairro = 'Todos';
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          _buildFiltroDropdown(
-                            value: filtroCidade,
-                            items: getCidadesPorEstado(),
-                            label: 'Cidade',
-                            onChanged: (value) {
-                              setModalState(() {
-                                filtroCidade = value;
-                                filtroBairro = 'Todos';
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          _buildFiltroDropdown(
-                            value: filtroBairro,
-                            items: getBairrosPorCidade(),
-                            label: 'Bairro',
-                            onChanged: (value) =>
-                                setModalState(() => filtroBairro = value),
-                          ),
-                          const SizedBox(height: 16),
-                          const Divider(),
-                          const Text('📊 TIPO DE GRÁFICO',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 8),
-                          _buildFiltroBottomSheet(
-                            value: filtroGrafico,
-                            items: const ['Linha', 'Barra'],
-                            onChanged: (value) =>
-                                setModalState(() => filtroGrafico = value),
-                            icons: {
-                              'Linha': Icons.show_chart,
-                              'Barra': Icons.bar_chart,
-                            },
+                          _buildFiltroSecao(
+                            titulo: '📍 LOCALIZAÇÃO',
+                            icone: Icons.location_on,
+                            children: [
+                              _buildFiltroDropdown(
+                                value: filtroEstado,
+                                items: estados,
+                                label: 'Estado',
+                                onChanged: (value) {
+                                  setModalState(() {
+                                    filtroEstado = value;
+                                    filtroCidade = 'Todas';
+                                    filtroBairro = 'Todos';
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              _buildFiltroDropdown(
+                                value: filtroCidade,
+                                items: getCidadesPorEstado(),
+                                label: 'Cidade',
+                                onChanged: (value) {
+                                  setModalState(() {
+                                    filtroCidade = value;
+                                    filtroBairro = 'Todos';
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              _buildFiltroDropdown(
+                                value: filtroBairro,
+                                items: getBairrosPorCidade(),
+                                label: 'Bairro',
+                                onChanged: (value) =>
+                                    setModalState(() => filtroBairro = value),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 16),
-                          const Divider(),
-                          const Text('📅 PERÍODO',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 8),
-                          _buildFiltroBottomSheet(
-                            value: filtroPeriodo,
-                            items: const ['Dia', 'Semana', 'Mes', 'Ano'],
-                            onChanged: (value) =>
-                                setModalState(() => filtroPeriodo = value),
-                            icons: {
-                              'Dia': Icons.today,
-                              'Semana': Icons.date_range,
-                              'Mes': Icons.calendar_month,
-                              'Ano': Icons.timeline,
-                            },
+                          _buildFiltroSecao(
+                            titulo: '📊 TIPO DE GRÁFICO',
+                            icone: Icons.show_chart,
+                            children: [
+                              _buildFiltroOpcao(
+                                value: filtroGrafico,
+                                items: const ['Linha', 'Barra'],
+                                icons: {
+                                  'Linha': Icons.show_chart,
+                                  'Barra': Icons.bar_chart,
+                                },
+                                onChanged: (value) =>
+                                    setModalState(() => filtroGrafico = value),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 16),
-                          const Divider(),
-                          const Text('🏷️ SITUAÇÃO DO LEAD',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 8),
-                          _buildFiltroChip(
-                            items: const ['Todos', 'aberta', 'conexao', 'negociacao', 'fechada'],
-                            selectedValue: filtroLeadSituacao,
-                            onChanged: (value) =>
-                                setModalState(() => filtroLeadSituacao = value),
+                          _buildFiltroSecao(
+                            titulo: '📅 PERÍODO',
+                            icone: Icons.calendar_today,
+                            children: [
+                              _buildFiltroOpcao(
+                                value: filtroPeriodo,
+                                items: const ['Dia', 'Semana', 'Mes', 'Ano'],
+                                icons: {
+                                  'Dia': Icons.today,
+                                  'Semana': Icons.date_range,
+                                  'Mes': Icons.calendar_month,
+                                  'Ano': Icons.timeline,
+                                },
+                                onChanged: (value) =>
+                                    setModalState(() => filtroPeriodo = value),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 16),
-                          const Divider(),
-                          const Text('🏷️ CATEGORIA',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 8),
-                          _buildFiltroChip(
-                            items: categorias,
-                            selectedValue: filtroCategoria,
-                            onChanged: (value) =>
-                                setModalState(() => filtroCategoria = value),
+                          _buildFiltroSecao(
+                            titulo: '🏷️ SITUAÇÃO DO LEAD',
+                            icone: Icons.label,
+                            children: [
+                              _buildFiltroChip(
+                                items: const ['Todos', 'aberta', 'conexao', 'negociacao', 'fechada'],
+                                selectedValue: filtroLeadSituacao,
+                                onChanged: (value) =>
+                                    setModalState(() => filtroLeadSituacao = value),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 16),
-                          const Divider(),
-                          const Text('💰 VALOR DA PROPOSTA',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 8),
-                          RangeSlider(
-                            values: filtroValor,
-                            min: 0,
-                            max: 100000,
-                            divisions: 10,
-                            labels: RangeLabels(
-                              'R\$ ${filtroValor.start.toStringAsFixed(0)}',
-                              'R\$ ${filtroValor.end.toStringAsFixed(0)}',
-                            ),
-                            onChanged: (values) =>
-                                setModalState(() => filtroValor = values),
+                          _buildFiltroSecao(
+                            titulo: '📂 CATEGORIA',
+                            icone: Icons.category,
+                            children: [
+                              _buildFiltroChip(
+                                items: categorias,
+                                selectedValue: filtroCategoria,
+                                onChanged: (value) =>
+                                    setModalState(() => filtroCategoria = value),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -424,7 +416,6 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
                               filtroPeriodo = 'Mes';
                               filtroLeadSituacao = 'Todos';
                               filtroCategoria = 'Todas';
-                              filtroValor = const RangeValues(0, 100000);
                             });
                           },
                           style: OutlinedButton.styleFrom(
@@ -439,11 +430,8 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            setState(() {
-                              _animationController.reset();
-                              _carregarTodosDados();
-                            });
                             Navigator.pop(context);
+                            _aplicarFiltros();
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFE53935),
@@ -467,6 +455,34 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
     );
   }
 
+  Widget _buildFiltroSecao({
+    required String titulo,
+    required IconData icone,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icone, size: 16, color: Colors.grey[700]),
+            const SizedBox(width: 8),
+            Text(
+              titulo,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[800],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...children,
+      ],
+    );
+  }
+
   Widget _buildFiltroDropdown({
     required String value,
     required List<String> items,
@@ -483,6 +499,7 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
         value: value,
         isExpanded: true,
         underline: const SizedBox(),
+        hint: Text(label),
         items: items.map((item) {
           return DropdownMenuItem(value: item, child: Text(item));
         }).toList(),
@@ -495,27 +512,21 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
     required List<String> items,
     required String selectedValue,
     required Function(String) onChanged,
-    Map<String, Color>? colors,
   }) {
     return Wrap(
       spacing: 8,
+      runSpacing: 8,
       children: items.map((item) {
         final isSelected = item == selectedValue;
-        Color chipColor;
-        if (colors != null && colors.containsKey(item)) {
-          chipColor = colors[item]!;
-        } else {
-          chipColor = const Color(0xFFE53935);
-        }
         return FilterChip(
-          label: Text(item),
+          label: Text(_formatarChipLabel(item)),
           selected: isSelected,
           onSelected: (_) => onChanged(item),
           backgroundColor: Colors.grey[100],
-          selectedColor: chipColor.withOpacity(0.2),
-          checkmarkColor: chipColor,
+          selectedColor: const Color(0xFFE53935).withOpacity(0.2),
+          checkmarkColor: const Color(0xFFE53935),
           labelStyle: TextStyle(
-            color: isSelected ? chipColor : Colors.grey[800],
+            color: isSelected ? const Color(0xFFE53935) : Colors.grey[800],
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           ),
         );
@@ -523,12 +534,21 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildFiltroBottomSheet({
+  String _formatarChipLabel(String label) {
+    switch (label) {
+      case 'aberta': return 'Aberta';
+      case 'conexao': return 'Conexão';
+      case 'negociacao': return 'Negociação';
+      case 'fechada': return 'Fechada';
+      default: return label;
+    }
+  }
+
+  Widget _buildFiltroOpcao({
     required String value,
     required List<String> items,
-    required Function(String) onChanged,
     required Map<String, IconData> icons,
-    Map<String, Color>? colors,
+    required Function(String) onChanged,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -539,24 +559,18 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
       child: Column(
         children: items.map((item) {
           final isSelected = value == item;
-          Color itemColor;
-          if (colors != null && colors.containsKey(item)) {
-            itemColor = colors[item]!;
-          } else {
-            itemColor = const Color(0xFFE53935);
-          }
           return InkWell(
             onTap: () => onChanged(item),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isSelected ? itemColor.withOpacity(0.1) : Colors.transparent,
+                color: isSelected ? const Color(0xFFE53935).withOpacity(0.1) : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
                   Icon(icons[item], size: 20,
-                      color: isSelected ? itemColor : Colors.grey[600]),
+                      color: isSelected ? const Color(0xFFE53935) : Colors.grey[600]),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -564,12 +578,12 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                        color: isSelected ? itemColor : Colors.grey[800],
+                        color: isSelected ? const Color(0xFFE53935) : Colors.grey[800],
                       ),
                     ),
                   ),
                   if (isSelected)
-                    Icon(Icons.check_circle, size: 18, color: itemColor),
+                    Icon(Icons.check_circle, size: 18, color: const Color(0xFFE53935)),
                 ],
               ),
             ),
@@ -579,7 +593,533 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
     );
   }
 
-  // ✅ Helper para evitar divisão por null — usado nos cards de meta
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.grey[50],
+    appBar: AppBar(
+      title: const Text('Dashboard', style: TextStyle(fontWeight: FontWeight.w600)),
+      backgroundColor: const Color(0xFFE53935),
+      foregroundColor: Colors.white,
+      elevation: 0,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: () => _aplicarFiltros(),
+          tooltip: 'Atualizar',
+        ),
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined),
+          onPressed: () {},
+          tooltip: 'Notificações',
+        ),
+      ],
+    ),
+    body: isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : RefreshIndicator(
+            onRefresh: () async => _aplicarFiltros(),
+            child: CustomScrollView(
+              slivers: [
+                // Cards de métricas
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 1.0,
+                    ),
+                    delegate: SliverChildListDelegate([
+                      _buildMetricaCard(
+                        title: 'Fechados',
+                        value: '${metricas['fechado'] ?? 0}',
+                        icon: Icons.check_circle,
+                        color: Colors.green,
+                        subtitle: 'leads convertidos',
+                      ),
+                      _buildMetricaCard(
+                        title: 'Abertos',
+                        value: '${metricas['abertos'] ?? 0}',
+                        icon: Icons.email_outlined,
+                        color: Colors.orange,
+                        subtitle: 'aguardando ação',
+                      ),
+                      _buildMetricaCard(
+                        title: 'Conversão',
+                        value: '${_toDouble(metricas['conversao']).toStringAsFixed(1)}%',
+                        icon: Icons.trending_up,
+                        color: Colors.blue,
+                        subtitle: 'taxa de sucesso',
+                      ),
+                      _buildMetricaCard(
+                        title: 'Total Leads',
+                        value: '${metricas['total'] ?? 0}',
+                        icon: Icons.people,
+                        color: Colors.purple,
+                        subtitle: 'cadastrados',
+                      ),
+                    ]),
+                  ),
+                ),
+
+                // Gráfico de evolução
+                SliverToBoxAdapter(
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Container(
+                      margin: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: _buildCardDecoration(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Evolução de Leads',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey[800],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _getPeriodoLabel(),
+                                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE53935).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      filtroGrafico == 'Linha' ? Icons.show_chart : Icons.bar_chart,
+                                      size: 14,
+                                      color: const Color(0xFFE53935),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      filtroGrafico,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFFE53935),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            height: 250,
+                            child: isLoadingGrafico
+                                ? const Center(child: CircularProgressIndicator())
+                                : dadosGrafico.isEmpty
+                                    ? const Center(child: Text('Sem dados para exibir'))
+                                    : _buildGrafico(dadosGrafico, labelsGrafico),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Leads por localização
+                SliverToBoxAdapter(
+                  child: Container(
+                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: _buildCardDecoration(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.location_on, color: Colors.blue[700], size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Leads por Localização',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (isLoadingBairros)
+                          const Center(child: CircularProgressIndicator())
+                        else if (leadsPorBairro.isEmpty)
+                          const Center(child: Text('Nenhum dado disponível'))
+                        else
+                          ...leadsPorBairro.entries.take(5).map((entry) {
+                            final conversao = conversaoPorBairro[entry.key] ?? 0;
+                            final maxValor = leadsPorBairro.values.reduce((a, b) => a > b ? a : b);
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        flex: 2,
+                                        child: Text(
+                                          entry.key,
+                                          style: const TextStyle(fontSize: 14),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        flex: 3,
+                                        child: Column(
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: LinearProgressIndicator(
+                                                    value: entry.value / maxValor,
+                                                    backgroundColor: Colors.grey[200],
+                                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                                      conversao > 0.4 ? Colors.green : Colors.blue,
+                                                    ),
+                                                    minHeight: 8,
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                SizedBox(
+                                                  width: 35,
+                                                  child: Text(
+                                                    '${entry.value}',
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                    textAlign: TextAlign.right,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Align(
+                                              alignment: Alignment.centerRight,
+                                              child: Text(
+                                                '${(conversao * 100).toStringAsFixed(0)}% conversão',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.grey[600],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Top Consultores e Alertas
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: 1.1,
+                    ),
+                    delegate: SliverChildListDelegate([
+                      _buildTopConsultoresCard(),
+                      _buildAlertasCard(),
+                    ]),
+                  ),
+                ),
+
+                const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+              ],
+            ),
+          ),
+    floatingActionButton: FloatingActionButton.extended(
+      onPressed: _abrirFiltros,
+      backgroundColor: const Color(0xFFE53935),
+      icon: const Icon(Icons.filter_list),
+      label: const Text('Filtrar'),
+    ),
+    floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+  );
+}
+  Widget _buildMetricaCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required String subtitle,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: _buildCardDecoration(),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 18, color: color),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            title,
+            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+          ),
+          Text(
+            subtitle,
+            style: TextStyle(fontSize: 9, color: Colors.grey[400]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopConsultoresCard() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: _buildCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.emoji_events, color: Colors.amber[700], size: 16),
+              const SizedBox(width: 4),
+              Text(
+                'Top Consultores',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[800],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (isLoadingConsultores)
+            const Expanded(child: Center(child: CircularProgressIndicator()))
+          else if (consultoresTop.isEmpty)
+            const Expanded(child: Center(child: Text('Nenhum dado disponível')))
+          else
+            Expanded(
+              child: ListView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: consultoresTop.take(3).length,
+                itemBuilder: (context, index) {
+                  final c = consultoresTop[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 14,
+                          backgroundColor: Colors.grey[200],
+                          child: Text(
+                            (c['nome'] as String? ?? '?')[0].toUpperCase(),
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                c['nome'] ?? '',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                '${c['fechados'] ?? 0} fechados • ${c['visitas'] ?? 0} visitas',
+                                style: TextStyle(fontSize: 9, color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${c['taxa_conversao'] ?? 0}%',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAlertasCard() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: _buildCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.notifications_active, color: Colors.red[700], size: 16),
+              const SizedBox(width: 4),
+              Text(
+                'Ações Prioritárias',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[800],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (isLoadingAlertas)
+            const Expanded(child: Center(child: CircularProgressIndicator()))
+          else if (alertas.isEmpty)
+            const Expanded(
+              child: Center(
+                child: Text('Nenhum alerta no momento', style: TextStyle(fontSize: 12)),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: alertas.length,
+                itemBuilder: (context, index) {
+                  final alerta = alertas[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(alerta.getIconData(), size: 14, color: alerta.getColor()),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            alerta.mensagem,
+                            style: const TextStyle(fontSize: 10),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          const Divider(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Meta mensal', style: TextStyle(fontSize: 10)),
+              Text(
+                '${meta['atual'] ?? 0} / ${meta['meta'] ?? 0} leads',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.green[700],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          LinearProgressIndicator(
+            value: (_toDouble(meta['progresso']) / 100).clamp(0.0, 1.0),
+            backgroundColor: Colors.grey[200],
+            valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+            minHeight: 4,
+            borderRadius: BorderRadius.circular(2),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Faltam ${meta['dias_restantes'] ?? 0} dias',
+            style: TextStyle(fontSize: 8, color: Colors.grey[600]),
+            textAlign: TextAlign.right,
+          ),
+        ],
+      ),
+    );
+  }
+
+  BoxDecoration _buildCardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    );
+  }
+
+  String _getPeriodoLabel() {
+    switch (filtroPeriodo) {
+      case 'Dia': return 'Últimos 7 dias';
+      case 'Semana': return 'Últimas 4 semanas';
+      case 'Ano': return 'Últimos 5 anos';
+      default: return 'Mês atual';
+    }
+  }
+
   double _toDouble(dynamic value, [double fallback = 0.0]) {
     if (value == null) return fallback;
     if (value is double) return value;
@@ -587,632 +1127,13 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
     return double.tryParse(value.toString()) ?? fallback;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final metricas = calcularMetricas();
-
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('Dashboard',
-            style: TextStyle(fontWeight: FontWeight.w600)),
-        backgroundColor: const Color(0xFFE53935),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              setState(() {
-                _animationController.reset();
-                _carregarTodosDados();
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: CustomScrollView(
-        slivers: [
-          // Cards de métricas superiores
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio: 1.0,
-              ),
-              delegate: SliverChildListDelegate([
-                isLoadingMetricas
-                    ? _buildShimmerCard()
-                    : _buildMetricaCard(
-                        title: 'Fechados',
-                        value: '${metricas['fechado'] ?? 0}',
-                        variacao:
-                            '${metricas['variacao_fechados'] != null && metricas['variacao_fechados'] > 0 ? '+' : ''}${_toDouble(metricas['variacao_fechados']).toStringAsFixed(1)}%',
-                        icon: Icons.check_circle,
-                        color: Colors.green,
-                      ),
-                isLoadingMetricas
-                    ? _buildShimmerCard()
-                    : _buildMetricaCard(
-                        title: 'Abertos',
-                        value: '${metricas['abertos'] ?? 0}',
-                        variacao: '+8%',
-                        icon: Icons.email_outlined,
-                        color: Colors.orange,
-                      ),
-                isLoadingMetricas
-                    ? _buildShimmerCard()
-                    : _buildMetricaCard(
-                        title: 'Conversão',
-                        value:
-                            '${_toDouble(metricas['conversao']).toStringAsFixed(1)}%',
-                        variacao: '+2%',
-                        icon: Icons.trending_up,
-                        color: Colors.blue,
-                      ),
-                isLoadingMetricas
-                    ? _buildShimmerCard()
-                    : _buildMetricaCard(
-                        title: 'Cobertura',
-                        value:
-                            '${_toDouble(metricas['cobertura']).toStringAsFixed(1)}%',
-                        variacao: '+5%',
-                        icon: Icons.map,
-                        color: Colors.purple,
-                      ),
-              ]),
-            ),
-          ),
-
-          // Gráfico Principal
-          SliverToBoxAdapter(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Evolução de Vendas',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey[800],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '$filtroPeriodo - $filtroLeadSituacao',
-                              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE53935).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                filtroGrafico == 'Linha'
-                                    ? Icons.show_chart
-                                    : Icons.bar_chart,
-                                size: 14,
-                                color: const Color(0xFFE53935),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                filtroGrafico,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFFE53935),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      height: 250,
-                      child: isLoadingGrafico
-                          ? const Center(child: CircularProgressIndicator())
-                          : _buildGrafico(dadosGrafico, labelsGrafico),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Leads por Bairro
-          SliverToBoxAdapter(
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.location_on, color: Colors.blue[700], size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Leads por Localização',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[800],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (isLoadingBairros)
-                    const Center(child: CircularProgressIndicator())
-                  else if (leadsPorBairro.isEmpty)
-                    const Center(child: Text('Nenhum dado disponível'))
-                  else
-                    ...leadsPorBairro.entries.take(5).map((entry) {
-                      final conversao = conversaoPorBairro[entry.key] ?? 0;
-                      final maxValor = leadsPorBairro.values
-                          .reduce((a, b) => a > b ? a : b);
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              flex: 2,
-                              child: Text(entry.key,
-                                  style: const TextStyle(fontSize: 14)),
-                            ),
-                            Expanded(
-                              flex: 3,
-                              child: Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: LinearProgressIndicator(
-                                          value: entry.value / maxValor,
-                                          backgroundColor: Colors.grey[200],
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                            conversao > 0.4
-                                                ? Colors.green
-                                                : Colors.blue,
-                                          ),
-                                          minHeight: 8,
-                                          borderRadius:
-                                              BorderRadius.circular(4),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        '${entry.value}',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Text(
-                                      '${(conversao * 100).toStringAsFixed(0)}% conversão',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  const SizedBox(height: 8),
-                  Center(
-                    child: TextButton(
-                      onPressed: () {},
-                      child: const Text('Ver todos os bairros →'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Top Consultores e Alertas
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 1.1,
-              ),
-              delegate: SliverChildListDelegate([
-                // Top Consultores
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.star, color: Colors.amber[700], size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Top Consultores',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey[800],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      if (isLoadingConsultores)
-                        const Center(child: CircularProgressIndicator())
-                      else if (consultoresTop.isEmpty)
-                        const Center(child: Text('Nenhum dado disponível'))
-                      else
-                        ...consultoresTop.take(3).map((c) {
-                          // ✅ Proteção contra null no valor do consultor
-                          final valor = _toDouble(c['valor']);
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 10,
-                                  backgroundColor: Colors.grey[200],
-                                  child: Text(
-                                    (c['nome'] as String? ?? '?')[0],
-                                    style: const TextStyle(fontSize: 9),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        c['nome'] ?? '',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      Text(
-                                        '${c['fechados'] ?? 0} fechados',
-                                        style: TextStyle(
-                                          fontSize: 9,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  // ✅ CORRIGIDO: proteção contra null
-                                  'R\$ ${(valor / 1000).toStringAsFixed(0)}k',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.green,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      const SizedBox(height: 4),
-                      if (!isLoadingConsultores && consultoresTop.isNotEmpty)
-                        Center(
-                          child: Text(
-                            'Média: ${(_toDouble(consultoresTop.map((c) => _toDouble(c['visitas'])).reduce((a, b) => a + b)) / consultoresTop.length).toStringAsFixed(0)} visitas | '
-                            '${(_toDouble(consultoresTop.map((c) => _toDouble(c['taxa_conversao'])).reduce((a, b) => a + b)) / consultoresTop.length).toStringAsFixed(1)}% conversão',
-                            style: TextStyle(
-                              fontSize: 9,
-                              color: Colors.grey[600],
-                              fontStyle: FontStyle.italic,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-
-                // Alertas e Ações
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.notifications_active,
-                              color: Colors.red[700], size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Ações Prioritárias',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey[800],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      if (isLoadingAlertas)
-                        const Center(child: CircularProgressIndicator())
-                      else if (alertas.isEmpty)
-                        const Center(
-                            child: Text('Nenhum alerta no momento'))
-                      else
-                        ...alertas.map((alerta) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(alerta.getIconData(),
-                                    size: 12, color: alerta.getColor()),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    alerta.mensagem,
-                                    style: const TextStyle(fontSize: 10),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      const Divider(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Meta mensal',
-                              style: TextStyle(fontSize: 10)),
-                          Text(
-                            // ✅ CORRIGIDO: usa _toDouble para evitar null / 1000
-                            'R\$ ${(_toDouble(meta['atual']) / 1000).toStringAsFixed(0)}k'
-                            ' / R\$ ${(_toDouble(meta['meta']) / 1000).toStringAsFixed(0)}k',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.green[700],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      LinearProgressIndicator(
-                        // ✅ CORRIGIDO: usa _toDouble para evitar null / 100
-                        value: _toDouble(meta['progresso']) / 100,
-                        backgroundColor: Colors.grey[200],
-                        valueColor:
-                            const AlwaysStoppedAnimation<Color>(Colors.green),
-                        minHeight: 4,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Faltam ${meta['dias_restantes'] ?? 0} dias',
-                        style: TextStyle(fontSize: 8, color: Colors.grey[600]),
-                        textAlign: TextAlign.right,
-                      ),
-                    ],
-                  ),
-                ),
-              ]),
-            ),
-          ),
-
-          const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _abrirFiltros,
-        backgroundColor: const Color(0xFFE53935),
-        icon: const Icon(Icons.filter_list),
-        label: const Text('Filtrar Dados'),
-      ),
-    );
-  }
-
-  Widget _buildShimmerCard() {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(width: 40, height: 20, color: Colors.grey[300]),
-          const SizedBox(height: 4),
-          Container(width: 30, height: 12, color: Colors.grey[300]),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetricaCard({
-    required String title,
-    required String value,
-    required String variacao,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(icon, size: 14, color: color),
-              ),
-              const Spacer(),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                decoration: BoxDecoration(
-                  color: variacao.startsWith('+')
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  variacao,
-                  style: TextStyle(
-                    fontSize: 8,
-                    color: variacao.startsWith('+')
-                        ? Colors.green[700]
-                        : Colors.red[700],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.bold)),
-          Text(title,
-              style: TextStyle(fontSize: 10, color: Colors.grey[600])),
-        ],
-      ),
-    );
-  }
-
   Widget _buildGrafico(List<double> dados, List<String> labels) {
     if (dados.isEmpty) {
       return const Center(child: Text('Sem dados para exibir'));
     }
+
+    final maxY = dados.reduce((a, b) => a > b ? a : b);
+    final minY = dados.reduce((a, b) => a < b ? a : b);
 
     switch (filtroGrafico) {
       case 'Linha':
@@ -1229,33 +1150,34 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
                 sideTitles: SideTitles(
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 &&
-                        value.toInt() < labels.length) {
+                    if (value.toInt() >= 0 && value.toInt() < labels.length) {
                       return Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: Text(labels[value.toInt()],
-                            style: TextStyle(
-                                fontSize: 10, color: Colors.grey[600])),
+                        child: Text(
+                          labels[value.toInt()],
+                          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                        ),
                       );
                     }
                     return const Text('');
                   },
+                  reservedSize: 30,
                 ),
               ),
               leftTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
-                  getTitlesWidget: (value, meta) => Text(
-                    value.toInt().toString(),
-                    style:
-                        TextStyle(fontSize: 10, color: Colors.grey[600]),
-                  ),
+                  getTitlesWidget: (value, meta) {
+                    return Text(
+                      value.toInt().toString(),
+                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                    );
+                  },
+                  reservedSize: 35,
                 ),
               ),
-              topTitles:
-                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles:
-                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             ),
             borderData: FlBorderData(show: false),
             lineBarsData: [
@@ -1266,13 +1188,15 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
                 isCurved: true,
                 color: const Color(0xFFE53935),
                 barWidth: 3,
-                dotData: FlDotData(show: false),
+                dotData: const FlDotData(show: false),
                 belowBarData: BarAreaData(
                   show: true,
                   color: const Color(0xFFE53935).withOpacity(0.1),
                 ),
               ),
             ],
+            minY: minY > 0 ? 0 : minY,
+            maxY: maxY + (maxY * 0.1),
           ),
         );
 
@@ -1290,33 +1214,34 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
                 sideTitles: SideTitles(
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 &&
-                        value.toInt() < labels.length) {
+                    if (value.toInt() >= 0 && value.toInt() < labels.length) {
                       return Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: Text(labels[value.toInt()],
-                            style: TextStyle(
-                                fontSize: 10, color: Colors.grey[600])),
+                        child: Text(
+                          labels[value.toInt()],
+                          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                        ),
                       );
                     }
                     return const Text('');
                   },
+                  reservedSize: 30,
                 ),
               ),
               leftTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
-                  getTitlesWidget: (value, meta) => Text(
-                    value.toInt().toString(),
-                    style:
-                        TextStyle(fontSize: 10, color: Colors.grey[600]),
-                  ),
+                  getTitlesWidget: (value, meta) {
+                    return Text(
+                      value.toInt().toString(),
+                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                    );
+                  },
+                  reservedSize: 35,
                 ),
               ),
-              topTitles:
-                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles:
-                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             ),
             borderData: FlBorderData(show: false),
             barGroups: dados.asMap().entries.map((e) {
@@ -1326,17 +1251,24 @@ class _DashPageState extends State<DashPage> with SingleTickerProviderStateMixin
                   BarChartRodData(
                     toY: e.value,
                     color: const Color(0xFFE53935),
-                    width: 16,
+                    width: 20,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ],
               );
             }).toList(),
+            minY: 0,
           ),
         );
 
       default:
         return const Center(child: Text('Selecione um tipo de gráfico'));
     }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 }

@@ -1,19 +1,21 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:teste/constants.dart';
 
 class DashboardService {
-  static const String baseUrl = 'http://192.168.10.240:5000/api/dashboard';
-  
-  // Headers padrão
-  static Map<String, String> _headers() {
+  static String get baseUrl => '$kBaseUrl/api/dashboard';
+
+  static Map<String, String> _headers(String token) {
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
     };
   }
 
   // Buscar métricas dos cards
   static Future<Map<String, dynamic>> getMetricas({
+    required String token,
     int? idUsuario,
     String? estado,
     String? cidade,
@@ -21,8 +23,6 @@ class DashboardService {
     String? categoria,
     String? dataInicio,
     String? dataFim,
-    double? valorMin,
-    double? valorMax,
   }) async {
     try {
       final queryParams = <String, String>{};
@@ -30,14 +30,18 @@ class DashboardService {
       if (estado != null && estado != 'Todos') queryParams['estado'] = estado;
       if (cidade != null && cidade != 'Todas') queryParams['cidade'] = cidade;
       if (bairro != null && bairro != 'Todos') queryParams['bairro'] = bairro;
-      if (categoria != null && categoria != 'Todas') queryParams['categoria'] = categoria;
+      if (categoria != null && categoria != 'Todas')
+        queryParams['categoria'] = categoria;
       if (dataInicio != null) queryParams['data_inicio'] = dataInicio;
       if (dataFim != null) queryParams['data_fim'] = dataFim;
-      if (valorMin != null) queryParams['valor_min'] = valorMin.toString();
-      if (valorMax != null) queryParams['valor_max'] = valorMax.toString();
 
-      final uri = Uri.parse('$baseUrl/metricas').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: _headers());
+      final uri = Uri.parse(
+        '$baseUrl/metricas',
+      ).replace(queryParameters: queryParams);
+      final response = await http.get(uri, headers: _headers(token));
+
+      print('GET $uri');
+      print('Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -57,6 +61,7 @@ class DashboardService {
 
   // Buscar dados do gráfico de evolução
   static Future<Map<String, dynamic>> getEvolucao({
+    required String token,
     String periodo = 'Mes',
     String situacao = 'Todos',
     int? idUsuario,
@@ -72,10 +77,13 @@ class DashboardService {
       if (idUsuario != null) queryParams['id_usuario'] = idUsuario.toString();
       if (estado != null && estado != 'Todos') queryParams['estado'] = estado;
       if (cidade != null && cidade != 'Todas') queryParams['cidade'] = cidade;
-      if (categoria != null && categoria != 'Todas') queryParams['categoria'] = categoria;
+      if (categoria != null && categoria != 'Todas')
+        queryParams['categoria'] = categoria;
 
-      final uri = Uri.parse('$baseUrl/evolucao').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: _headers());
+      final uri = Uri.parse(
+        '$baseUrl/evolucao',
+      ).replace(queryParameters: queryParams);
+      final response = await http.get(uri, headers: _headers(token));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -98,34 +106,41 @@ class DashboardService {
 
   // Buscar leads por bairro
   static Future<Map<String, dynamic>> getLeadsPorBairro({
+    required String token,
     int? idUsuario,
     String? estado,
     String? cidade,
     int limit = 5,
   }) async {
     try {
-      final queryParams = <String, String>{
-        'limit': limit.toString(),
-      };
+      final queryParams = <String, String>{'limit': limit.toString()};
       if (idUsuario != null) queryParams['id_usuario'] = idUsuario.toString();
       if (estado != null && estado != 'Todos') queryParams['estado'] = estado;
       if (cidade != null && cidade != 'Todas') queryParams['cidade'] = cidade;
 
-      final uri = Uri.parse('$baseUrl/leads-por-bairro').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: _headers());
+      final uri = Uri.parse(
+        '$baseUrl/leads-por-bairro',
+      ).replace(queryParameters: queryParams);
+      final response = await http.get(uri, headers: _headers(token));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == 'ok') {
           return {
             'leads_por_bairro': Map<String, int>.from(data['leads_por_bairro']),
-            'conversao_por_bairro': Map<String, double>.from(data['conversao_por_bairro']),
+            'conversao_por_bairro': Map<String, double>.from(
+              data['conversao_por_bairro'],
+            ),
           };
         } else {
-          throw Exception(data['mensagem'] ?? 'Erro ao buscar leads por bairro');
+          throw Exception(
+            data['mensagem'] ?? 'Erro ao buscar leads por bairro',
+          );
         }
       } else {
-        throw Exception('Erro ${response.statusCode} ao buscar leads por bairro');
+        throw Exception(
+          'Erro ${response.statusCode} ao buscar leads por bairro',
+        );
       }
     } catch (e) {
       print('Erro em getLeadsPorBairro: $e');
@@ -134,10 +149,15 @@ class DashboardService {
   }
 
   // Buscar top consultores
-  static Future<List<Map<String, dynamic>>> getTopConsultores({int limit = 5}) async {
+  static Future<List<Map<String, dynamic>>> getTopConsultores({
+    required String token,
+    int limit = 5,
+  }) async {
     try {
-      final uri = Uri.parse('$baseUrl/top-consultores').replace(queryParameters: {'limit': limit.toString()});
-      final response = await http.get(uri, headers: _headers());
+      final uri = Uri.parse(
+        '$baseUrl/top-consultores',
+      ).replace(queryParameters: {'limit': limit.toString()});
+      final response = await http.get(uri, headers: _headers(token));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -147,7 +167,9 @@ class DashboardService {
           throw Exception(data['mensagem'] ?? 'Erro ao buscar top consultores');
         }
       } else {
-        throw Exception('Erro ${response.statusCode} ao buscar top consultores');
+        throw Exception(
+          'Erro ${response.statusCode} ao buscar top consultores',
+        );
       }
     } catch (e) {
       print('Erro em getTopConsultores: $e');
@@ -156,21 +178,23 @@ class DashboardService {
   }
 
   // Buscar alertas
-  static Future<Map<String, dynamic>> getAlertas({int? idUsuario}) async {
+  static Future<Map<String, dynamic>> getAlertas({
+    required String token,
+    int? idUsuario,
+  }) async {
     try {
       final queryParams = <String, String>{};
       if (idUsuario != null) queryParams['id_usuario'] = idUsuario.toString();
 
-      final uri = Uri.parse('$baseUrl/alertas').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: _headers());
+      final uri = Uri.parse(
+        '$baseUrl/alertas',
+      ).replace(queryParameters: queryParams);
+      final response = await http.get(uri, headers: _headers(token));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == 'ok') {
-          return {
-            'alertas': data['alertas'],
-            'meta': data['meta'],
-          };
+          return {'alertas': data['alertas'], 'meta': data['meta']};
         } else {
           throw Exception(data['mensagem'] ?? 'Erro ao buscar alertas');
         }
@@ -184,10 +208,12 @@ class DashboardService {
   }
 
   // Buscar opções para filtros
-  static Future<Map<String, dynamic>> getOpcoesFiltros() async {
+  static Future<Map<String, dynamic>> getOpcoesFiltros({
+    required String token,
+  }) async {
     try {
       final uri = Uri.parse('$baseUrl/filtros/locais');
-      final response = await http.get(uri, headers: _headers());
+      final response = await http.get(uri, headers: _headers(token));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -199,10 +225,14 @@ class DashboardService {
             'categorias': List<String>.from(data['categorias']),
           };
         } else {
-          throw Exception(data['mensagem'] ?? 'Erro ao buscar opções de filtros');
+          throw Exception(
+            data['mensagem'] ?? 'Erro ao buscar opções de filtros',
+          );
         }
       } else {
-        throw Exception('Erro ${response.statusCode} ao buscar opções de filtros');
+        throw Exception(
+          'Erro ${response.statusCode} ao buscar opções de filtros',
+        );
       }
     } catch (e) {
       print('Erro em getOpcoesFiltros: $e');
