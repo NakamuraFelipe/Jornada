@@ -94,6 +94,7 @@ class _AppWidgetState extends State<AppWidget> {
             '/usuarios_supervisionados': (context) => UsuariosSupervisionados(),
             '/gestao_usuarios':     (context) => const GestaoUsuariosPage(),  // ✅ NOVO
             '/gerenciar_leads':     (context) => const GerenciarLeadsPage(),  // ✅ NOVO
+            '/dash': (context) => const DashboardWrapper(),
           },
         );
       },
