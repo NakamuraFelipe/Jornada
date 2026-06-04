@@ -20,6 +20,7 @@ import 'package:teste/usuarios_supervisionados.dart';
 import 'package:teste/gestao_usuarios_page.dart';    // ✅ NOVO
 import 'package:teste/gerenciar_leads_page.dart';    // ✅ NOVO
 import './models/usuario_logado.dart';
+import 'dashboard_wrapper.dart';
 
 class AppWidget extends StatefulWidget {
   final String title;
