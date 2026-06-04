@@ -5,6 +5,7 @@ import 'package:teste/dash_page.dart';
 import 'package:teste/inicio.dart';
 import 'package:teste/meus_leads.dart';
 import 'package:teste/home_page_gestor.dart';
+import 'dashboard_wrapper.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _navIndex = 0;
 
   // MeusLeads agora não precisa do token
-  final List<Widget> _pages = [Inicio(), const MeusLeads(), DashPage()];
+  final List<Widget> _pages = [Inicio(), const MeusLeads(), const DashboardWrapper()];
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +72,7 @@ class _HomeScreenGestorState extends State<HomeScreenGestor> {
   int _navIndex = 0;
 
   // MeusLeads também sem token aqui
-  final List<Widget> _pages = [HomePage_Gestor(), const MeusLeads(), DashPage()];
+  final List<Widget> _pages = [HomePage_Gestor(), const MeusLeads(), const DashboardWrapper()];
 
   @override
   Widget build(BuildContext context) {
