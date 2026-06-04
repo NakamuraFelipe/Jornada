@@ -13,9 +13,26 @@ class DashboardService {
     };
   }
 
+  // Função auxiliar para construir URL com parâmetros repetidos (ex: id_usuario=1&id_usuario=2)
+  static String _buildUrlWithMultipleIds(String baseUrl, String path, Map<String, dynamic> params) {
+    final buffer = StringBuffer('$baseUrl$path?');
+    params.forEach((key, value) {
+      if (value is List) {
+        for (var item in value) {
+          buffer.write('$key=$item&');
+        }
+      } else {
+        buffer.write('$key=$value&');
+      }
+    });
+    String url = buffer.toString();
+    if (url.endsWith('&')) url = url.substring(0, url.length - 1);
+    return url;
+  }
+
   // ==================== MÉTODOS PRINCIPAIS ====================
 
-  // Buscar métricas dos cards
+  // Buscar métricas dos cards (agora aceita lista de IDs)
   static Future<Map<String, dynamic>> getMetricas({
     required String token,
     List<int>? idsUsuario,
@@ -27,22 +44,21 @@ class DashboardService {
     String? dataFim,
   }) async {
     try {
-      final queryParams = <String, String>{};
+      final params = <String, dynamic>{};
       
       if (idsUsuario != null && idsUsuario.isNotEmpty) {
-        for (var id in idsUsuario) {
-          queryParams['id_usuario'] = id.toString();
-        }
+        params['id_usuario'] = idsUsuario.map((id) => id.toString()).toList();
       }
       
-      if (estado != null && estado != 'Todos') queryParams['estado'] = estado;
-      if (cidade != null && cidade != 'Todas') queryParams['cidade'] = cidade;
-      if (bairro != null && bairro != 'Todos') queryParams['bairro'] = bairro;
-      if (categoria != null && categoria != 'Todas') queryParams['categoria'] = categoria;
-      if (dataInicio != null) queryParams['data_inicio'] = dataInicio;
-      if (dataFim != null) queryParams['data_fim'] = dataFim;
+      if (estado != null && estado != 'Todos') params['estado'] = estado;
+      if (cidade != null && cidade != 'Todas') params['cidade'] = cidade;
+      if (bairro != null && bairro != 'Todos') params['bairro'] = bairro;
+      if (categoria != null && categoria != 'Todas') params['categoria'] = categoria;
+      if (dataInicio != null) params['data_inicio'] = dataInicio;
+      if (dataFim != null) params['data_fim'] = dataFim;
 
-      final uri = Uri.parse('$baseUrl/metricas').replace(queryParameters: queryParams);
+      final url = _buildUrlWithMultipleIds(baseUrl, '/metricas', params);
+      final uri = Uri.parse(url);
       final response = await http.get(uri, headers: _headers(token));
 
       print('GET Métricas: $uri');
@@ -51,21 +67,15 @@ class DashboardService {
 
       if (response.statusCode == 200) {
         final dynamic data = json.decode(response.body);
-        
-        if (data is Map<String, dynamic>) {
-          if (data['status'] == 'ok') {
-            if (data['dados'] is Map<String, dynamic>) {
-              return Map<String, dynamic>.from(data['dados']);
-            } else {
-              print('Erro: campo "dados" não é um Map');
-              return _getMetricasPadrao();
-            }
+        if (data is Map<String, dynamic> && data['status'] == 'ok') {
+          if (data['dados'] is Map<String, dynamic>) {
+            return Map<String, dynamic>.from(data['dados']);
           } else {
-            throw Exception(data['mensagem'] ?? 'Erro ao buscar métricas');
+            print('Erro: campo "dados" não é um Map');
+            return _getMetricasPadrao();
           }
         } else {
-          print('Erro: resposta não é um Map');
-          return _getMetricasPadrao();
+          throw Exception(data['mensagem'] ?? 'Erro ao buscar métricas');
         }
       } else {
         throw Exception('Erro ${response.statusCode} ao buscar métricas');
@@ -90,7 +100,7 @@ class DashboardService {
     };
   }
 
-  // Buscar dados do gráfico de evolução
+  // Buscar dados do gráfico de evolução (agora aceita lista de IDs)
   static Future<Map<String, dynamic>> getEvolucao({
     required String token,
     String periodo = 'Mes',
@@ -103,24 +113,23 @@ class DashboardService {
     String? dataFim,
   }) async {
     try {
-      final queryParams = <String, String>{
+      final params = <String, dynamic>{
         'periodo': periodo,
         'situacao': situacao,
       };
       
       if (idsUsuario != null && idsUsuario.isNotEmpty) {
-        for (var id in idsUsuario) {
-          queryParams['id_usuario'] = id.toString();
-        }
+        params['id_usuario'] = idsUsuario.map((id) => id.toString()).toList();
       }
       
-      if (estado != null && estado != 'Todos') queryParams['estado'] = estado;
-      if (cidade != null && cidade != 'Todas') queryParams['cidade'] = cidade;
-      if (categoria != null && categoria != 'Todas') queryParams['categoria'] = categoria;
-      if (dataInicio != null) queryParams['data_inicio'] = dataInicio;
-      if (dataFim != null) queryParams['data_fim'] = dataFim;
+      if (estado != null && estado != 'Todos') params['estado'] = estado;
+      if (cidade != null && cidade != 'Todas') params['cidade'] = cidade;
+      if (categoria != null && categoria != 'Todas') params['categoria'] = categoria;
+      if (dataInicio != null) params['data_inicio'] = dataInicio;
+      if (dataFim != null) params['data_fim'] = dataFim;
 
-      final uri = Uri.parse('$baseUrl/evolucao').replace(queryParameters: queryParams);
+      final url = _buildUrlWithMultipleIds(baseUrl, '/evolucao', params);
+      final uri = Uri.parse(url);
       final response = await http.get(uri, headers: _headers(token));
 
       print('GET Evolução: $uri');
@@ -146,7 +155,7 @@ class DashboardService {
     }
   }
 
-  // Buscar leads por bairro
+  // Buscar leads por bairro (agora aceita lista de IDs)
   static Future<Map<String, dynamic>> getLeadsPorBairro({
     required String token,
     List<int>? idsUsuario,
@@ -155,18 +164,17 @@ class DashboardService {
     int limit = 5,
   }) async {
     try {
-      final queryParams = <String, String>{'limit': limit.toString()};
+      final params = <String, dynamic>{'limit': limit.toString()};
       
       if (idsUsuario != null && idsUsuario.isNotEmpty) {
-        for (var id in idsUsuario) {
-          queryParams['id_usuario'] = id.toString();
-        }
+        params['id_usuario'] = idsUsuario.map((id) => id.toString()).toList();
       }
       
-      if (estado != null && estado != 'Todos') queryParams['estado'] = estado;
-      if (cidade != null && cidade != 'Todas') queryParams['cidade'] = cidade;
+      if (estado != null && estado != 'Todos') params['estado'] = estado;
+      if (cidade != null && cidade != 'Todas') params['cidade'] = cidade;
 
-      final uri = Uri.parse('$baseUrl/leads-por-bairro').replace(queryParameters: queryParams);
+      final url = _buildUrlWithMultipleIds(baseUrl, '/leads-por-bairro', params);
+      final uri = Uri.parse(url);
       final response = await http.get(uri, headers: _headers(token));
 
       print('GET Leads por Bairro: $uri');
@@ -192,13 +200,13 @@ class DashboardService {
     }
   }
 
-  // Buscar top consultores
+  // Buscar top consultores (não precisa de múltiplos IDs, mas mantemos)
   static Future<List<Map<String, dynamic>>> getTopConsultores({
     required String token,
     int limit = 5,
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl/top-consultores').replace(queryParameters: {'limit': limit.toString()});
+      final uri = Uri.parse('$baseUrl/top-consultores?limit=$limit');
       final response = await http.get(uri, headers: _headers(token));
 
       print('GET Top Consultores: $uri');
@@ -221,21 +229,19 @@ class DashboardService {
     }
   }
 
-  // Buscar alertas
+  // Buscar alertas (agora aceita lista de IDs)
   static Future<Map<String, dynamic>> getAlertas({
     required String token,
     List<int>? idsUsuario,
   }) async {
     try {
-      final queryParams = <String, String>{};
-      
+      final params = <String, dynamic>{};
       if (idsUsuario != null && idsUsuario.isNotEmpty) {
-        for (var id in idsUsuario) {
-          queryParams['id_usuario'] = id.toString();
-        }
+        params['id_usuario'] = idsUsuario.map((id) => id.toString()).toList();
       }
 
-      final uri = Uri.parse('$baseUrl/alertas').replace(queryParameters: queryParams);
+      final url = _buildUrlWithMultipleIds(baseUrl, '/alertas', params);
+      final uri = Uri.parse(url);
       final response = await http.get(uri, headers: _headers(token));
 
       print('GET Alertas: $uri');
@@ -261,7 +267,7 @@ class DashboardService {
     }
   }
 
-  // Buscar opções para filtros
+  // Buscar opções para filtros (não usa IDs, mantém)
   static Future<Map<String, dynamic>> getOpcoesFiltros({
     required String token,
   }) async {
@@ -301,7 +307,7 @@ class DashboardService {
 
   // ==================== NOVOS MÉTODOS ====================
 
-  // Buscar cancelamentos
+  // Buscar cancelamentos (já suporta múltiplos parâmetros via getlist no backend)
   static Future<List<Map<String, dynamic>>> getCancelamentos({
     required String token,
     String? estado,
@@ -312,16 +318,17 @@ class DashboardService {
     String? dataFim,
   }) async {
     try {
-      final queryParams = <String, String>{
+      final params = <String, dynamic>{
         'group_by': groupBy,
       };
-      if (estado != null && estado != 'Todos') queryParams['estado'] = estado;
-      if (cidade != null && cidade != 'Todas') queryParams['cidade'] = cidade;
-      if (bairro != null && bairro != 'Todos') queryParams['bairro'] = bairro;
-      if (dataInicio != null) queryParams['data_inicio'] = dataInicio;
-      if (dataFim != null) queryParams['data_fim'] = dataFim;
+      if (estado != null && estado != 'Todos') params['estado'] = estado;
+      if (cidade != null && cidade != 'Todas') params['cidade'] = cidade;
+      if (bairro != null && bairro != 'Todos') params['bairro'] = bairro;
+      if (dataInicio != null) params['data_inicio'] = dataInicio;
+      if (dataFim != null) params['data_fim'] = dataFim;
 
-      final uri = Uri.parse('$baseUrl/cancelamentos').replace(queryParameters: queryParams);
+      final url = _buildUrlWithMultipleIds(baseUrl, '/cancelamentos', params);
+      final uri = Uri.parse(url);
       final response = await http.get(uri, headers: _headers(token));
 
       print('GET Cancelamentos: $uri');
@@ -344,23 +351,28 @@ class DashboardService {
     }
   }
 
-  // Buscar ranking de vendas
+  // Buscar ranking de vendas (agora com suporte a bairro e data)
   static Future<List<Map<String, dynamic>>> getRankingVendas({
     required String token,
     String? estado,
     String? cidade,
+    String? bairro,
     String? categoria,
+    String? dataInicio,
+    String? dataFim,
     int limit = 10,
   }) async {
     try {
-      final queryParams = <String, String>{
-        'limit': limit.toString(),
-      };
-      if (estado != null && estado != 'Todos') queryParams['estado'] = estado;
-      if (cidade != null && cidade != 'Todas') queryParams['cidade'] = cidade;
-      if (categoria != null && categoria != 'Todas') queryParams['categoria'] = categoria;
+      final params = <String, dynamic>{'limit': limit.toString()};
+      if (estado != null && estado != 'Todos') params['estado'] = estado;
+      if (cidade != null && cidade != 'Todas') params['cidade'] = cidade;
+      if (bairro != null && bairro != 'Todos') params['bairro'] = bairro;
+      if (categoria != null && categoria != 'Todas') params['categoria'] = categoria;
+      if (dataInicio != null) params['data_inicio'] = dataInicio;
+      if (dataFim != null) params['data_fim'] = dataFim;
 
-      final uri = Uri.parse('$baseUrl/ranking-vendas').replace(queryParameters: queryParams);
+      final url = _buildUrlWithMultipleIds(baseUrl, '/ranking-vendas', params);
+      final uri = Uri.parse(url);
       final response = await http.get(uri, headers: _headers(token));
 
       print('GET Ranking Vendas: $uri');
@@ -383,7 +395,7 @@ class DashboardService {
     }
   }
 
-  // Buscar desempenho de consultores
+  // Buscar desempenho de consultores (envia múltiplos id_usuario)
   static Future<List<Map<String, dynamic>>> getDesempenhoConsultores({
     required String token,
     required List<int> idsUsuario,
@@ -394,19 +406,17 @@ class DashboardService {
     String? dataFim,
   }) async {
     try {
-      final queryParams = <String, String>{};
+      final params = <String, dynamic>{};
+      params['id_usuario'] = idsUsuario.map((id) => id.toString()).toList();
       
-      for (var id in idsUsuario) {
-        queryParams['id_usuario'] = id.toString();
-      }
-      
-      if (estado != null && estado != 'Todos') queryParams['estado'] = estado;
-      if (cidade != null && cidade != 'Todas') queryParams['cidade'] = cidade;
-      if (bairro != null && bairro != 'Todos') queryParams['bairro'] = bairro;
-      if (dataInicio != null) queryParams['data_inicio'] = dataInicio;
-      if (dataFim != null) queryParams['data_fim'] = dataFim;
+      if (estado != null && estado != 'Todos') params['estado'] = estado;
+      if (cidade != null && cidade != 'Todas') params['cidade'] = cidade;
+      if (bairro != null && bairro != 'Todos') params['bairro'] = bairro;
+      if (dataInicio != null) params['data_inicio'] = dataInicio;
+      if (dataFim != null) params['data_fim'] = dataFim;
 
-      final uri = Uri.parse('$baseUrl/desempenho-consultores').replace(queryParameters: queryParams);
+      final url = _buildUrlWithMultipleIds(baseUrl, '/desempenho-consultores', params);
+      final uri = Uri.parse(url);
       final response = await http.get(uri, headers: _headers(token));
 
       print('GET Desempenho Consultores: $uri');
