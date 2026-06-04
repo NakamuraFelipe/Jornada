@@ -124,59 +124,66 @@ class _DashPageState extends State<DashPage> {
     }
   }
 
-  Future<void> _carregarMetricas() async {
-    try {
-      metricas = await DashboardService.getMetricas(
-        token: token!,
-        idsUsuario: [idUsuarioLogado!],
-        estado: filtroEstado != 'Todos' ? filtroEstado : null,
-        cidade: filtroCidade != 'Todas' ? filtroCidade : null,
-        bairro: filtroBairro != 'Todos' ? filtroBairro : null,
-        categoria: filtroCategoria != 'Todas' ? filtroCategoria : null,
-        dataInicio: dataInicio != null
-            ? DateFormat('yyyy-MM-dd').format(dataInicio!)
-            : null,
-        dataFim: dataFim != null
-            ? DateFormat('yyyy-MM-dd').format(dataFim!)
-            : null,
-      );
-    } catch (e) {
-      print('Erro métricas: $e');
-      metricas = _getMetricasPadrao();
-    }
-  }
+Future<void> _carregarMetricas() async {
+  print('🟢 Carregando métricas...');
+  if (token == null) return;
 
-  Future<void> _carregarGrafico() async {
-    if (!mounted) return;
-    setState(() => isLoadingGrafico = true);
-    try {
-      final resultado = await DashboardService.getEvolucao(
-        token: token!,
-        periodo: filtroPeriodo,
-        situacao: filtroLeadSituacao,
-        idsUsuario: [idUsuarioLogado!],
-        estado: filtroEstado != 'Todos' ? filtroEstado : null,
-        cidade: filtroCidade != 'Todas' ? filtroCidade : null,
-        categoria: filtroCategoria != 'Todas' ? filtroCategoria : null,
-        dataInicio: dataInicio != null
-            ? DateFormat('yyyy-MM-dd').format(dataInicio!)
-            : null,
-        dataFim: dataFim != null
-            ? DateFormat('yyyy-MM-dd').format(dataFim!)
-            : null,
-      );
-      if (mounted) {
-        setState(() {
-          dadosGrafico = resultado['dados'];
-          labelsGrafico = resultado['labels'];
-        });
-      }
-    } catch (e) {
-      print('Erro gráfico: $e');
-    } finally {
-      if (mounted) setState(() => isLoadingGrafico = false);
-    }
+  // Define a lista de IDs que será enviada
+  final ids = idsConsultoresSelecionados.isNotEmpty
+      ? idsConsultoresSelecionados
+      : [idUsuarioLogado!];
+
+  try {
+    metricas = await DashboardService.getMetricas(
+      token: token!,
+      idsUsuario: ids,        // ← lista completa
+      estado: filtroEstado != 'Todos' ? filtroEstado : null,
+      cidade: filtroCidade != 'Todas' ? filtroCidade : null,
+      bairro: filtroBairro != 'Todos' ? filtroBairro : null,
+      categoria: filtroCategoria != 'Todas' ? filtroCategoria : null,
+      dataInicio: dataInicio != null ? DateFormat('yyyy-MM-dd').format(dataInicio!) : null,
+      dataFim: dataFim != null ? DateFormat('yyyy-MM-dd').format(dataFim!) : null,
+    );
+  } catch (e) {
+    print('Erro métricas: $e');
+    metricas = _getMetricasPadrao();
   }
+}
+
+Future<void> _carregarGrafico() async {
+  if (!mounted) return;
+  setState(() => isLoadingGrafico = true);
+  
+  if (token == null) return;
+  
+  final ids = idsConsultoresSelecionados.isNotEmpty
+      ? idsConsultoresSelecionados
+      : [idUsuarioLogado!];
+
+  try {
+    final resultado = await DashboardService.getEvolucao(
+      token: token!,
+      periodo: filtroPeriodo,
+      situacao: filtroLeadSituacao,
+      idsUsuario: ids,          // ← lista completa
+      estado: filtroEstado != 'Todos' ? filtroEstado : null,
+      cidade: filtroCidade != 'Todas' ? filtroCidade : null,
+      categoria: filtroCategoria != 'Todas' ? filtroCategoria : null,
+      dataInicio: dataInicio != null ? DateFormat('yyyy-MM-dd').format(dataInicio!) : null,
+      dataFim: dataFim != null ? DateFormat('yyyy-MM-dd').format(dataFim!) : null,
+    );
+    if (mounted) {
+      setState(() {
+        dadosGrafico = resultado['dados'];
+        labelsGrafico = resultado['labels'];
+      });
+    }
+  } catch (e) {
+    print('Erro gráfico: $e');
+  } finally {
+    if (mounted) setState(() => isLoadingGrafico = false);
+  }
+}
 
   Future<void> _carregarTopConsultores() async {
     try {
@@ -422,85 +429,124 @@ class _DashPageState extends State<DashPage> {
     );
   }
 
-  Widget _buildMetricasGrid() {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.5,
+ Widget _buildMetricasGrid() {
+  return GridView.count(
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    crossAxisCount: 2,
+    mainAxisSpacing: 12,
+    crossAxisSpacing: 12,
+    childAspectRatio: 1.4,
+    children: [
+      _buildMetricaCard(
+        title: 'Fechados',
+        value: '${metricas['fechado'] ?? 0}',
+        icon: Icons.check_circle,
+        color: Colors.green,
+        subtitle: 'leads convertidos',
+      ),
+      _buildMetricaCard(
+        title: 'Abertos',
+        value: '${metricas['abertos'] ?? 0}',
+        icon: Icons.email_outlined,
+        color: Colors.orange,
+        subtitle: 'aguardando ação',
+      ),
+      _buildMetricaCard(
+        title: 'Conexão',
+        value: '${metricas['conexao'] ?? 0}',
+        icon: Icons.people_outline,
+        color: Colors.blue,
+        subtitle: 'primeiro contato',
+      ),
+      _buildMetricaCard(
+        title: 'Negociação',
+        value: '${metricas['negociacao'] ?? 0}',
+        icon: Icons.handshake_outlined,
+        color: Colors.purple,
+        subtitle: 'em negociação',
+      ),
+      _buildMetricaCard(
+        title: 'Conversão',
+        value: '${_toDouble(metricas['conversao']).toStringAsFixed(1)}%',
+        icon: Icons.trending_up,
+        color: Colors.teal,
+        subtitle: 'taxa de sucesso',
+      ),
+      _buildMetricaCard(
+        title: 'Total Leads',
+        value: '${metricas['total'] ?? 0}',
+        icon: Icons.people,
+        color: Colors.redAccent,
+        subtitle: 'cadastrados',
+      ),
+    ],
+  );
+}
+
+Widget _buildMetricaCard({
+  required String title,
+  required String value,
+  required IconData icon,
+  required Color color,
+  required String subtitle,
+}) {
+  final isMulti = idsConsultoresSelecionados.length > 1;
+  return Container(
+    padding: const EdgeInsets.all(12),
+    decoration: _buildCardDecoration(),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildMetricaCard(
-          title: 'Fechados',
-          value: '${metricas['fechado'] ?? 0}',
-          icon: Icons.check_circle,
-          color: Colors.green,
-          subtitle: 'leads convertidos',
+        // Linha com ícone e valor lado a lado
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 18, color: color),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
-        _buildMetricaCard(
-          title: 'Abertos',
-          value: '${metricas['abertos'] ?? 0}',
-          icon: Icons.email_outlined,
-          color: Colors.orange,
-          subtitle: 'aguardando ação',
+        const SizedBox(height: 8),
+        // Título e opcional "(combinado)"
+        Row(
+          children: [
+            Text(
+              title,
+              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            ),
+            if (isMulti) ...[
+              const SizedBox(width: 4),
+              Text(
+                '(combinado)',
+                style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+              ),
+            ],
+          ],
         ),
-        _buildMetricaCard(
-          title: 'Conversão',
-          value: '${_toDouble(metricas['conversao']).toStringAsFixed(1)}%',
-          icon: Icons.trending_up,
-          color: Colors.blue,
-          subtitle: 'taxa de sucesso',
-        ),
-        _buildMetricaCard(
-          title: 'Total Leads',
-          value: '${metricas['total'] ?? 0}',
-          icon: Icons.people,
-          color: Colors.purple,
-          subtitle: 'cadastrados',
+        const SizedBox(height: 2),
+        Text(
+          subtitle,
+          style: TextStyle(fontSize: 10, color: Colors.grey[400]),
         ),
       ],
-    );
-  }
-
-  Widget _buildMetricaCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-    required String subtitle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: _buildCardDecoration(),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 18, color: color),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(title, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-          Text(
-            subtitle,
-            style: TextStyle(fontSize: 9, color: Colors.grey[400]),
-          ),
-        ],
-      ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildEvolucaoCard() {
     return Container(
@@ -927,153 +973,134 @@ class _DashPageState extends State<DashPage> {
     );
   }
 
-  Widget _buildGrafico(List<double> dados, List<String> labels) {
-    if (dados.isEmpty)
-      return const Center(child: Text('Sem dados para exibir'));
-    final maxY = dados.reduce((a, b) => a > b ? a : b);
-    final minY = dados.reduce((a, b) => a < b ? a : b);
-    switch (filtroGrafico) {
-      case 'Linha':
-        return LineChart(
-          LineChartData(
-            gridData: FlGridData(
-              show: true,
-              drawVerticalLine: false,
-              getDrawingHorizontalLine: (value) =>
-                  FlLine(color: Colors.grey.shade200, strokeWidth: 1),
-            ),
-            titlesData: FlTitlesData(
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 && value.toInt() < labels.length)
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          labels[value.toInt()],
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      );
-                    return const Text('');
-                  },
-                  reservedSize: 30,
-                ),
-              ),
-              leftTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  getTitlesWidget: (value, meta) => Text(
-                    value.toInt().toString(),
-                    style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                  ),
-                  reservedSize: 35,
-                ),
-              ),
-              topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-              rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-            ),
-            borderData: FlBorderData(show: false),
-            lineBarsData: [
-              LineChartBarData(
-                spots: dados
-                    .asMap()
-                    .entries
-                    .map((e) => FlSpot(e.key.toDouble(), e.value))
-                    .toList(),
-                isCurved: true,
-                color: const Color(0xFFE53935),
-                barWidth: 3,
-                dotData: const FlDotData(show: false),
-                belowBarData: BarAreaData(
-                  show: true,
-                  color: const Color(0xFFE53935).withOpacity(0.1),
-                ),
-              ),
-            ],
-            minY: minY > 0 ? 0 : minY,
-            maxY: maxY + (maxY * 0.1),
+Widget _buildGrafico(List<double> dados, List<String> labels) {
+  if (dados.isEmpty) return const Center(child: Text('Sem dados para exibir'));
+
+  final maxY = dados.reduce((a, b) => a > b ? a : b);
+  // Define um teto com 10% de folga, mas nunca abaixo de 1 se houver dados
+  final yMax = maxY > 0 ? maxY + (maxY * 0.1) : 1.0;
+
+  switch (filtroGrafico) {
+    case 'Linha':
+      return LineChart(
+        LineChartData(
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            getDrawingHorizontalLine: (value) =>
+                FlLine(color: Colors.grey.shade200, strokeWidth: 1),
           ),
-        );
-      case 'Barra':
-        return BarChart(
-          BarChartData(
-            gridData: FlGridData(
-              show: true,
-              drawVerticalLine: false,
-              getDrawingHorizontalLine: (value) =>
-                  FlLine(color: Colors.grey.shade200, strokeWidth: 1),
-            ),
-            titlesData: FlTitlesData(
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 && value.toInt() < labels.length)
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          labels[value.toInt()],
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      );
-                    return const Text('');
-                  },
-                  reservedSize: 30,
-                ),
-              ),
-              leftTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  getTitlesWidget: (value, meta) => Text(
-                    value.toInt().toString(),
-                    style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                  ),
-                  reservedSize: 35,
-                ),
-              ),
-              topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-              rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-            ),
-            borderData: FlBorderData(show: false),
-            barGroups: dados
-                .asMap()
-                .entries
-                .map(
-                  (e) => BarChartGroupData(
-                    x: e.key,
-                    barRods: [
-                      BarChartRodData(
-                        toY: e.value,
-                        color: const Color(0xFFE53935),
-                        width: 20,
-                        borderRadius: BorderRadius.circular(4),
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  if (value.toInt() >= 0 && value.toInt() < labels.length) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        labels[value.toInt()],
+                        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
                       ),
-                    ],
-                  ),
-                )
-                .toList(),
-            minY: 0,
+                    );
+                  }
+                  return const Text('');
+                },
+                reservedSize: 30,
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) =>
+                    Text(value.toInt().toString(), style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+                reservedSize: 35,
+              ),
+            ),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
-        );
-      default:
-        return const Center(child: Text('Selecione um tipo de gráfico'));
-    }
+          borderData: FlBorderData(show: false),
+          lineBarsData: [
+            LineChartBarData(
+              spots: dados.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
+              isCurved: true,
+              color: const Color(0xFFE53935),
+              barWidth: 3,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                color: const Color(0xFFE53935).withOpacity(0.1),
+              ),
+            ),
+          ],
+          minY: 0,
+          maxY: yMax,
+        ),
+      );
+
+    case 'Barra':
+      return BarChart(
+        BarChartData(
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            getDrawingHorizontalLine: (value) =>
+                FlLine(color: Colors.grey.shade200, strokeWidth: 1),
+          ),
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  if (value.toInt() >= 0 && value.toInt() < labels.length) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        labels[value.toInt()],
+                        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                      ),
+                    );
+                  }
+                  return const Text('');
+                },
+                reservedSize: 30,
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) =>
+                    Text(value.toInt().toString(), style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+                reservedSize: 35,
+              ),
+            ),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          ),
+          borderData: FlBorderData(show: false),
+          barGroups: dados.asMap().entries.map((e) {
+            return BarChartGroupData(
+              x: e.key,
+              barRods: [
+                BarChartRodData(
+                  toY: e.value,
+                  color: const Color(0xFFE53935),
+                  width: 20,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ],
+            );
+          }).toList(),
+          minY: 0,
+          maxY: yMax,
+        ),
+      );
+
+    default:
+      return const Center(child: Text('Selecione um tipo de gráfico'));
   }
+}
 
   String _getPeriodoLabel() {
     switch (filtroPeriodo) {
