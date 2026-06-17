@@ -202,8 +202,8 @@ class _HomePage_GestorState extends State<HomePage_Gestor> {
                               ),
                               ActionItem(
                                 icon: Icons.groups_rounded,
-                                label: 'Meus Leads',
-                                onTap: () => Navigator.of(context).pushNamed('/meus_leads'),
+                                label: 'Visitas',
+                                onTap: () => Navigator.of(context).pushNamed('/vistas_pages'),
                               ),
                               ActionItem(
                                 icon: Icons.bookmark_rounded,

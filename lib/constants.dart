@@ -1,2 +1,2 @@
-const String kBaseUrl = 'https://jornadabackend-hr3v.onrender.com';
+const String kBaseUrl = 'http://192.168.0.25:5000';
 //https://jornadabackend-hr3v.onrender.com

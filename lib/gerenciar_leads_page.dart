@@ -7,7 +7,6 @@ import 'models/usuario_consultor.dart';
 import '../constants.dart';
 
 const _kPrimary = Color(0xFFD32F2F);
-const _kBase    = '$kBaseUrl';
 
 class GerenciarLeadsPage extends StatefulWidget {
   const GerenciarLeadsPage({super.key});
@@ -17,12 +16,12 @@ class GerenciarLeadsPage extends StatefulWidget {
 }
 
 class _GerenciarLeadsPageState extends State<GerenciarLeadsPage> {
-  List<LeadGestor>        _leads       = [];
-  List<LeadGestor>        _filtrados   = [];
-  List<UsuarioConsultor>  _consultores = [];
-  bool   _loading = true;
+  List<LeadGestor>       _leads       = [];
+  List<LeadGestor>       _filtrados   = [];
+  List<UsuarioConsultor> _consultores = [];
+  bool    _loading      = true;
   String? _token;
-  String  _busca  = '';
+  String  _busca        = '';
   String  _filtroEstado = 'Todos';
 
   @override
@@ -38,59 +37,85 @@ class _GerenciarLeadsPageState extends State<GerenciarLeadsPage> {
   }
 
   Future<void> _carregarLeads() async {
-    setState(() => _loading = true);
-    try {
-      final resp = await http.get(
-        Uri.parse('$_kBase/gestor/leads'),
-        headers: {
-          'Content-Type': 'application/json',
-          if (_token != null) 'Authorization': 'Bearer $_token',
-        },
-      );
-      if (resp.statusCode == 200) {
-        final data = jsonDecode(resp.body);
-        _leads = (data['leads'] as List)
-            .map((l) => LeadGestor.fromJson(l))
+  setState(() => _loading = true);
+
+  try {
+    debugPrint('URL FINAL: ${'$kBaseUrl/gestor/lead'}');
+    final resp = await http.get(
+      Uri.parse('$kBaseUrl/gestor/lead'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (_token != null) 'Authorization': 'Bearer $_token',
+      },
+    );
+
+    debugPrint('[GerenciarLead] GET /gestor/lead → ${resp.statusCode}');
+    debugPrint('[GerenciarLead] Body: ${resp.body}');
+
+    if (resp.statusCode == 200) {
+      final data = jsonDecode(resp.body);
+
+      final lista = data['leads'] as List? ?? [];
+
+      setState(() {
+        _leads = lista
+            .map((l) => LeadGestor.fromJson(l as Map<String, dynamic>))
             .toList();
-        _aplicarFiltro();
-      } else {
-        _showMsg('Erro ao carregar leads', erro: true);
-      }
-    } catch (e) {
-      _showMsg('Erro de conexão: $e', erro: true);
-    } finally {
-      setState(() => _loading = false);
+      });
+
+      _aplicarFiltro();
+    } else {
+      _showMsg(
+        'Erro ${resp.statusCode} ao carregar leads',
+        erro: true,
+      );
     }
+  } catch (e) {
+    debugPrint('[GerenciarLead] Erro: $e');
+
+    _showMsg(
+      'Erro de conexão',
+      erro: true,
+    );
+  } finally {
+    setState(() => _loading = false);
   }
+}
 
   Future<void> _carregarConsultores() async {
     try {
       final resp = await http.get(
-        Uri.parse('$_kBase/gestor/usuarios'),
+        Uri.parse('$kBaseUrl/gestor/usuarios'),
         headers: {
           'Content-Type': 'application/json',
           if (_token != null) 'Authorization': 'Bearer $_token',
         },
       );
+      debugPrint('[GerenciarLead] GET /gestor/usuarios → ${resp.statusCode}');
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
+        final lista = data['usuarios'] as List? ?? [];
         setState(() {
-          _consultores = (data['usuarios'] as List)
-              .map((u) => UsuarioConsultor.fromJson(u))
+          _consultores = lista
+              .map((u) => UsuarioConsultor.fromJson(u as Map<String, dynamic>))
               .toList();
         });
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[GerenciarLead] Erro consultores: $e');
+    }
   }
 
   void _aplicarFiltro() {
     setState(() {
       _filtrados = _leads.where((l) {
-        final matchBusca = _busca.isEmpty ||
-            l.nomeLocal.toLowerCase().contains(_busca.toLowerCase()) ||
-            l.nomeResponsavel.toLowerCase().contains(_busca.toLowerCase()) ||
-            l.nomeConsultor.toLowerCase().contains(_busca.toLowerCase());
-        final matchEstado = _filtroEstado == 'Todos' || l.estadoLeads == _filtroEstado;
+        final q = _busca.toLowerCase();
+        final matchBusca = q.isEmpty ||
+            l.nomeLocal.toLowerCase().contains(q) ||
+            l.nomeResponsavel.toLowerCase().contains(q) ||
+            l.nomeConsultor.toLowerCase().contains(q);
+        final matchEstado =
+            _filtroEstado == 'Todos' || l.estadoLead == _filtroEstado;
         return matchBusca && matchEstado;
       }).toList();
     });
@@ -104,43 +129,62 @@ class _GerenciarLeadsPageState extends State<GerenciarLeadsPage> {
     ));
   }
 
-  // ── Trocar consultor ──────────────────────────────────────────────────────
   void _abrirTrocarConsultor(LeadGestor lead) {
     if (_consultores.isEmpty) {
-      _showMsg('Nenhum consultor disponível', erro: true);
+      _showMsg('Nenhum consultor disponível. Recarregue a página.', erro: true);
       return;
     }
 
-    UsuarioConsultor? selecionado = _consultores
-        .where((c) => c.idUsuario == lead.idUsuario)
-        .firstOrNull;
+    UsuarioConsultor? selecionado;
+    try {
+      selecionado =
+          _consultores.firstWhere((c) => c.idUsuario == lead.idUsuario);
+    } catch (_) {
+      selecionado = null;
+    }
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialog) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               const Text('Trocar Consultor',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              Text(lead.nomeLocal,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600,
-                      fontWeight: FontWeight.normal)),
+              Text(
+                lead.nomeLocal,
+                style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.normal),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
           content: DropdownButtonFormField<UsuarioConsultor>(
             value: selecionado,
+            isExpanded: true,
             decoration: InputDecoration(
-              labelText: 'Consultor',
+              labelText: 'Selecione o consultor',
               prefixIcon: const Icon(Icons.person, color: _kPrimary),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: _kPrimary, width: 2),
+              ),
             ),
-            items: _consultores.map((c) => DropdownMenuItem(
-              value: c,
-              child: Text(c.nomeUsuario),
-            )).toList(),
+            items: _consultores
+                .map((c) => DropdownMenuItem(
+                      value: c,
+                      child: Text(c.nomeUsuario,
+                          overflow: TextOverflow.ellipsis),
+                    ))
+                .toList(),
             onChanged: (v) => setDialog(() => selecionado = v),
           ),
           actions: [
@@ -149,30 +193,17 @@ class _GerenciarLeadsPageState extends State<GerenciarLeadsPage> {
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
-              onPressed: selecionado == null ? null : () async {
-                Navigator.pop(ctx);
-                try {
-                  final resp = await http.put(
-                    Uri.parse('$_kBase/gestor/lead/${lead.idLeads}/trocar_consultor'),
-                    headers: {
-                      'Content-Type': 'application/json',
-                      if (_token != null) 'Authorization': 'Bearer $_token',
+              onPressed: selecionado == null
+                  ? null
+                  : () async {
+                      Navigator.pop(ctx);
+                      await _trocarConsultor(lead, selecionado!);
                     },
-                    body: jsonEncode({'id_usuario': selecionado!.idUsuario}),
-                  );
-                  if (resp.statusCode == 200) {
-                    _showMsg('Consultor trocado com sucesso!');
-                    _carregarLeads();
-                  } else {
-                    final data = jsonDecode(resp.body);
-                    _showMsg(data['mensagem'] ?? 'Erro', erro: true);
-                  }
-                } catch (e) {
-                  _showMsg('Erro de conexão: $e', erro: true);
-                }
-              },
               style: ElevatedButton.styleFrom(
-                  backgroundColor: _kPrimary, foregroundColor: Colors.white),
+                  backgroundColor: _kPrimary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8))),
               child: const Text('Confirmar'),
             ),
           ],
@@ -181,7 +212,33 @@ class _GerenciarLeadsPageState extends State<GerenciarLeadsPage> {
     );
   }
 
-  // ── Cores/labels de estado ────────────────────────────────────────────────
+  Future<void> _trocarConsultor(
+      LeadGestor lead, UsuarioConsultor novoConsultor) async {
+    try {
+      final resp = await http.put(
+        Uri.parse('$kBaseUrl/gestor/lead/${lead.idLead}/trocar_consultor'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (_token != null) 'Authorization': 'Bearer $_token',
+        },
+        body: jsonEncode({'id_usuario': novoConsultor.idUsuario}),
+      );
+
+      debugPrint('[GerenciarLeads] PUT trocar_consultor → ${resp.statusCode}');
+
+      if (resp.statusCode == 200) {
+        _showMsg(
+            'Lead "${lead.nomeLocal}" transferido para ${novoConsultor.nomeUsuario}!');
+        await _carregarLeads();
+      } else {
+        final data = jsonDecode(resp.body);
+        _showMsg(data['mensagem'] ?? 'Erro ao trocar consultor', erro: true);
+      }
+    } catch (e) {
+      _showMsg('Erro de conexão: $e', erro: true);
+    }
+  }
+
   Color _estadoCor(String estado) {
     switch (estado) {
       case 'fechada':    return Colors.green;
@@ -211,20 +268,27 @@ class _GerenciarLeadsPageState extends State<GerenciarLeadsPage> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _carregarLeads),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () async {
+              await Future.wait([_carregarLeads(), _carregarConsultores()]);
+            },
+          ),
         ],
       ),
       body: Column(
         children: [
-          // ── Barra de busca e filtro ──────────────────────────────────────
+          // ── Busca + filtro ───────────────────────────────────────────────
           Container(
             color: Colors.white,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: Column(
               children: [
-                // Busca
                 TextField(
-                  onChanged: (v) { _busca = v; _aplicarFiltro(); },
+                  onChanged: (v) {
+                    _busca = v;
+                    _aplicarFiltro();
+                  },
                   decoration: InputDecoration(
                     hintText: 'Buscar por empresa, responsável ou consultor...',
                     prefixIcon: const Icon(Icons.search, color: _kPrimary),
@@ -240,25 +304,28 @@ class _GerenciarLeadsPageState extends State<GerenciarLeadsPage> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                // Filtro estado
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: ['Todos', 'aberta', 'conexao', 'negociacao', 'fechada']
                         .map((e) {
                       final sel = _filtroEstado == e;
+                      final label = e == 'Todos' ? 'Todos' : _estadoLabel(e);
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: FilterChip(
-                          label: Text(_estadoLabel(e) == 'Aberta' && e == 'Todos'
-                              ? 'Todos' : _estadoLabel(e)),
+                          label: Text(label),
                           selected: sel,
-                          onSelected: (_) { _filtroEstado = e; _aplicarFiltro(); },
+                          onSelected: (_) {
+                            setState(() => _filtroEstado = e);
+                            _aplicarFiltro();
+                          },
                           selectedColor: _kPrimary.withOpacity(0.15),
                           checkmarkColor: _kPrimary,
                           labelStyle: TextStyle(
                             color: sel ? _kPrimary : Colors.grey.shade700,
-                            fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight:
+                                sel ? FontWeight.w600 : FontWeight.normal,
                             fontSize: 12,
                           ),
                         ),
@@ -273,15 +340,22 @@ class _GerenciarLeadsPageState extends State<GerenciarLeadsPage> {
           // ── Contador ─────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Text('${_filtrados.length} lead${_filtrados.length != 1 ? 's' : ''}',
-                    style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w500)),
+            child: Row(children: [
+              Text(
+                '${_filtrados.length} lead${_filtrados.length != 1 ? 's' : ''}',
+                style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500),
+              ),
+              if (_consultores.isNotEmpty) ...[
+                const Spacer(),
+                Text(
+                  '${_consultores.length} consultor${_consultores.length != 1 ? 'es' : ''}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
               ],
-            ),
+            ]),
           ),
 
           // ── Lista ─────────────────────────────────────────────────────────
@@ -289,22 +363,12 @@ class _GerenciarLeadsPageState extends State<GerenciarLeadsPage> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: _kPrimary))
                 : _filtrados.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.inbox, size: 64, color: Colors.grey.shade400),
-                            const SizedBox(height: 12),
-                            Text('Nenhum lead encontrado',
-                                style: TextStyle(color: Colors.grey.shade600)),
-                          ],
-                        ),
-                      )
+                    ? _buildVazio()
                     : RefreshIndicator(
                         onRefresh: _carregarLeads,
                         color: _kPrimary,
                         child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
                           itemCount: _filtrados.length,
                           itemBuilder: (_, i) => _buildCard(_filtrados[i]),
                         ),
@@ -315,9 +379,35 @@ class _GerenciarLeadsPageState extends State<GerenciarLeadsPage> {
     );
   }
 
+  Widget _buildVazio() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade400),
+          const SizedBox(height: 12),
+          Text(
+            _leads.isEmpty
+                ? 'Nenhum lead encontrado para seus consultores'
+                : 'Nenhum lead corresponde ao filtro',
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          TextButton.icon(
+            onPressed: _carregarLeads,
+            icon: const Icon(Icons.refresh, color: _kPrimary),
+            label: const Text('Recarregar',
+                style: TextStyle(color: _kPrimary)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCard(LeadGestor lead) {
-    final estadoCor   = _estadoCor(lead.estadoLeads);
-    final estadoLabel = _estadoLabel(lead.estadoLeads);
+    final cor   = _estadoCor(lead.estadoLead);
+    final label = _estadoLabel(lead.estadoLead);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -326,9 +416,9 @@ class _GerenciarLeadsPageState extends State<GerenciarLeadsPage> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8, offset: const Offset(0, 3),
-          ),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3)),
         ],
       ),
       child: Padding(
@@ -336,80 +426,97 @@ class _GerenciarLeadsPageState extends State<GerenciarLeadsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Linha 1: empresa + estado
-            Row(
-              children: [
-                Expanded(
-                  child: Text(lead.nomeLocal,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 15),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+            // Empresa + estado
+            Row(children: [
+              Expanded(
+                child: Text(lead.nomeLocal,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 15),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: cor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: estadoCor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(estadoLabel,
-                      style: TextStyle(
-                          fontSize: 11, color: estadoCor, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
+                child: Text(label,
+                    style: TextStyle(
+                        fontSize: 11, color: cor, fontWeight: FontWeight.w600)),
+              ),
+            ]),
             const SizedBox(height: 6),
 
             // Responsável
             Row(children: [
               Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
               const SizedBox(width: 4),
-              Text(lead.nomeResponsavel,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+              Expanded(
+                child: Text(lead.nomeResponsavel,
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ),
             ]),
             const SizedBox(height: 4),
 
-            // Linha consultor + valor
-            Row(
-              children: [
-                Icon(Icons.badge_outlined, size: 14, color: Colors.grey.shade500),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(lead.nomeConsultor,
-                      style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade700,
-                          fontStyle: FontStyle.italic),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+            // Consultor + valor acordado
+            Row(children: [
+              Icon(Icons.badge_outlined, size: 14, color: Colors.grey.shade500),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  lead.nomeConsultor.isNotEmpty
+                      ? lead.nomeConsultor
+                      : 'Sem consultor',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: lead.nomeConsultor.isNotEmpty
+                          ? Colors.grey.shade700
+                          : Colors.red.shade300,
+                      fontStyle: FontStyle.italic),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                if (lead.valorProposta != null)
-                  Text(
-                    'R\$ ${lead.valorProposta!.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.green),
-                  ),
+              ),
+              // ✅ valorAcordado (da tabela VISITA)
+              if (lead.valorAcordado != null && lead.valorAcordado! > 0) ...[
+                const SizedBox(width: 8),
+                Text(
+                  'R\$ ${lead.valorAcordado!.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.green),
+                ),
               ],
-            ),
+            ]),
 
             // Data + categoria
             if (lead.dataCriacao != null || lead.categoriaVenda != null) ...[
               const SizedBox(height: 6),
               Row(children: [
                 if (lead.dataCriacao != null) ...[
-                  Icon(Icons.calendar_today, size: 12, color: Colors.grey.shade400),
+                  Icon(Icons.calendar_today,
+                      size: 12, color: Colors.grey.shade400),
                   const SizedBox(width: 4),
-                  Text(lead.dataCriacao!.substring(0, 10),
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                  Text(
+                    lead.dataCriacao!.length >= 10
+                        ? lead.dataCriacao!.substring(0, 10)
+                        : lead.dataCriacao!,
+                    style:
+                        TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  ),
                   const SizedBox(width: 12),
                 ],
                 if (lead.categoriaVenda != null) ...[
                   Icon(Icons.category, size: 12, color: Colors.grey.shade400),
                   const SizedBox(width: 4),
                   Text(lead.categoriaVenda!,
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                      style: TextStyle(
+                          fontSize: 11, color: Colors.grey.shade500)),
                 ],
               ]),
             ],

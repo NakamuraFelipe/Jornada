@@ -1,42 +1,42 @@
 class LeadGestor {
-  final int idLeads;
+  final int idLead;
   final String nomeLocal;
   final String nomeResponsavel;
   final String telefone;
-  final double? valorProposta;
+  final double? valorAcordado;   // vem da tabela VISITA (última visita)
   final String? categoriaVenda;
   final String? dataCriacao;
-  final String estadoLeads;
+  final String estadoLead;
   final int idUsuario;
   final String nomeConsultor;
- 
+
   LeadGestor({
-    required this.idLeads,
+    required this.idLead,
     required this.nomeLocal,
     required this.nomeResponsavel,
     required this.telefone,
-    this.valorProposta,
+    this.valorAcordado,
     this.categoriaVenda,
     this.dataCriacao,
-    required this.estadoLeads,
+    required this.estadoLead,
     required this.idUsuario,
     required this.nomeConsultor,
   });
- 
+
   factory LeadGestor.fromJson(Map<String, dynamic> json) {
     return LeadGestor(
-      idLeads: json['id_leads'] as int,
-      nomeLocal: json['nome_local'] as String,
-      nomeResponsavel: json['nome_responsavel'] as String,
-      telefone: json['telefone'] as String,
-      valorProposta: json['valor_proposta'] != null
-          ? (json['valor_proposta'] as num).toDouble()
+      idLead:          json['id_lead'] as int,
+      nomeLocal:       json['nome_local']       as String? ?? '',
+      nomeResponsavel: json['nome_responsavel'] as String? ?? '',
+      telefone:        json['telefone']         as String? ?? '',
+      valorAcordado: json['valor_acordado'] != null
+          ? (json['valor_acordado'] as num).toDouble()
           : null,
       categoriaVenda: json['categoria_venda'] as String?,
-      dataCriacao: json['data_criacao'] as String?,
-      estadoLeads: json['estado_leads'] as String? ?? 'aberta',
-      idUsuario: json['id_usuario'] as int,
-      nomeConsultor: json['nome_consultor'] as String? ?? '',
+      dataCriacao:    json['data_criacao']    as String?,
+      estadoLead:     json['estado_lead']     as String? ?? 'aberta',
+      idUsuario:      json['id_usuario']      as int,
+      nomeConsultor:  json['nome_consultor']  as String? ?? '',
     );
   }
 }
