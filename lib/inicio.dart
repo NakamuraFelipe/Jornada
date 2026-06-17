@@ -260,23 +260,16 @@ class _InicioState extends State<Inicio> {
                               ),
                               ActionItem(
                                 icon: Icons.groups_rounded,
-                                label: 'Meus Leads',
+                                label: 'Visitas',
                                 onTap: () => Navigator.of(
                                   context,
-                                ).pushNamed('/meus_leads'),
+                                ).pushNamed('/vistas_pages'),
                               ),
                               ActionItem(
                                 icon: Icons.bookmark_rounded,
                                 label: 'Leads Salvos',
                                 onTap: () =>
                                     Navigator.of(context).pushNamed('/home'),
-                              ),
-                              ActionItem(
-                                icon: Icons.import_export_rounded,
-                                label: 'Exportar Dados',
-                                onTap: () => Navigator.of(
-                                  context,
-                                ).pushNamed('/exportar'),
                               ),
                             ],
                           ),

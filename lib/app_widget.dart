@@ -19,6 +19,7 @@ import 'package:teste/perfil_page.dart';
 import 'package:teste/usuarios_supervisionados.dart';
 import 'package:teste/gestao_usuarios_page.dart';    // ✅ NOVO
 import 'package:teste/gerenciar_leads_page.dart';    // ✅ NOVO
+import 'package:teste/vistas_pages.dart';    // ✅ NOVO
 import './models/usuario_logado.dart';
 
 class AppWidget extends StatefulWidget {
@@ -93,6 +94,14 @@ class _AppWidgetState extends State<AppWidget> {
             '/usuarios_supervisionados': (context) => UsuariosSupervisionados(),
             '/gestao_usuarios':     (context) => const GestaoUsuariosPage(),  // ✅ NOVO
             '/gerenciar_leads':     (context) => const GerenciarLeadsPage(),  // ✅ NOVO
+            '/visitas': (context) {
+              final args = ModalRoute.of(context)!.settings.arguments as Map;
+              return VisitasPage(
+                idLead:         args['id_lead'],
+                nomeLocal:      args['nome_local'],
+                idLocalizacao:  args['id_localizacao'],
+              );
+            },
           },
         );
       },
